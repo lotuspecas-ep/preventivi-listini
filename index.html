@@ -801,6 +801,37 @@
     border-radius:7px;padding:7px 12px;margin-right:10px;font-weight:600;font-size:12.5px;cursor:pointer}
   .mfoot{flex-wrap:wrap;gap:8px}
 
+  /* importi doppi */
+  .netto{font-weight:400;font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .totbox .l.sub .netto{display:inline-block;min-width:74px;text-align:right}
+  .ro .netto{display:block;font-size:10.5px}
+  .netcell{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+  .dleft b .netto{font-size:11px;display:block;line-height:1.2}
+  .totbox .l.head2 span:last-child{font-weight:400;text-transform:none;opacity:.8}
+  /* noleggio: prezzi riga nascosti */
+  #doc.hidePrices .price-col{display:none}
+  /* allegati */
+  .alist{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:7px}
+  .alist li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff}
+  .alist li .ai{width:30px;height:30px;border-radius:7px;background:var(--tint);color:var(--teal-deep);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:0 0 auto}
+  .alist li .an{flex:1;min-width:0}
+  .alist li .an b{display:block;font-size:13px;word-break:break-word}
+  .alist li .an small{display:block;font-size:11px;color:var(--muted)}
+  .alist li .an input.box{min-height:32px;font-size:12px;padding:4px 8px;margin-top:4px}
+  .alist li .aact{display:flex;gap:6px;flex:0 0 auto}
+  .alist .empty{justify-content:center;color:var(--muted);font-size:12.5px;border-style:dashed;background:transparent}
+  label.add{display:inline-flex;align-items:center;cursor:pointer}
+  @media print{ #allAdd{display:none} .alist li .aact{display:none} .alist li .an input.box{border:0;padding:0} }
+  #doc.exporting #allAdd,#doc.exporting .alist .aact{display:none}
+  .viewbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:26px;padding:10px 14px;
+    border:1px solid var(--line);border-radius:10px;background:var(--tint2)}
+  .viewbar .vbnote{font-size:11px;color:var(--muted);flex:1;min-width:180px;line-height:1.4}
+  .viewbar .vbstate{font-size:11px;font-weight:700;border-radius:20px;padding:4px 11px;background:#fff;color:var(--teal-deep);border:1px solid var(--line)}
+  #doc.hidePrices .viewbar .vbstate{background:var(--teal-deep);color:#fff;border-color:var(--teal-deep)}
+  .hidenote{display:none;font-size:11.5px;color:var(--muted);margin:16px 0 0;padding:9px 12px;border-left:3px solid var(--teal);background:var(--tint2);border-radius:0 8px 8px 0}
+  #doc.hidePrices .hidenote{display:block}
+  #doc.docLocked .viewbar,#doc.exporting .viewbar{display:none}
+  @media print{ .viewbar{display:none} }
 </style>
 </head>
 <body class="locked">
@@ -1018,12 +1049,18 @@
       </div>
     </div>
 
+    <div class="viewbar">
+      <label class="switch"><input type="checkbox" data-k="view.hidePrices" id="hidePricesChk"> Nascondi i prezzi delle singole righe</label>
+      <span class="vbnote">Il cliente vede descrizioni, quantità e totali; i prezzi unitari restano nel calcolo ma non vengono mostrati né stampati.</span>
+      <span class="vbstate" id="pvPrezzi">Prezzi di riga visibili</span>
+    </div>
+
     <div class="sec">
       <div class="h"><span class="num">1</span> Software &amp; Licenze — Infrastruttura, SaaS, Cloud</div>
       <div class="tblwrap"><table id="tblSw">
         <thead><tr>
           <th style="width:34%">Nome software / servizio</th><th style="width:18%">Tipo licenza</th><th style="width:14%">Durata</th>
-          <th class="num" style="width:9%">Q.tà</th><th class="num" style="width:13%">Prezzo unit.</th><th class="num" style="width:14%">Totale (IVA esc.)</th><th class="act"></th>
+          <th class="num" style="width:9%">Q.tà</th><th class="num price-col" style="width:13%">Prezzo unit.</th><th class="num price-col" style="width:14%">Totale (IVA esc.)</th><th class="act"></th>
         </tr></thead><tbody></tbody>
       </table></div>
       <div class="addrow"><button class="add" type="button" onclick="addLine('sw')">+ Aggiungi riga software</button><button class="add fromlist" type="button" onclick="openPicker('sw')">&#9776; Scegli dal listino</button></div>
@@ -1034,7 +1071,7 @@
       <div class="tblwrap"><table id="tblHw">
         <thead><tr>
           <th style="width:24%">Codice / modello</th><th style="width:38%">Descrizione tecnica</th>
-          <th class="num" style="width:9%">Q.tà</th><th class="num" style="width:14%">Prezzo unit.</th><th class="num" style="width:15%">Totale (IVA esc.)</th><th class="act"></th>
+          <th class="num" style="width:9%">Q.tà</th><th class="num price-col" style="width:14%">Prezzo unit.</th><th class="num price-col" style="width:15%">Totale (IVA esc.)</th><th class="act"></th>
         </tr></thead><tbody></tbody>
       </table></div>
       <div class="addrow"><button class="add" type="button" onclick="addLine('hw')">+ Aggiungi riga hardware</button><button class="add fromlist" type="button" onclick="openPicker('hw')">&#9776; Scegli dal listino</button></div>
@@ -1067,7 +1104,14 @@
               <label><input class="sr" type="radio" name="pnolmesi" value="60" data-k="pay.nol.mesi">60 mesi</label>
               <label><input class="sr" type="radio" name="pnolmesi" value="96" data-k="pay.nol.mesi">96 mesi</label>
             </div>
+            <div class="sublab" style="margin-top:12px">Canone</div>
+            <div class="fgrid">
+              <div class="ff"><span>Canone mensile (IVA esc.)</span><div class="ro" id="canoneNet">—</div></div>
+              <div class="ff"><span>Canone mensile IVA inclusa</span><div class="ro" id="canoneIva">—</div></div>
+              <div class="ff"><span>Totale contratto (IVA incl.)</span><div class="ro" id="nolTot">—</div></div>
+            </div>
             <p class="note" id="nolNote"></p>
+            <p class="note">Il canone è calcolato dal totale delle righe diviso i mesi di durata. I prezzi di partenza arrivano dal listino e restano modificabili riga per riga.</p>
           </div>
         </div>
       </div>
@@ -1114,9 +1158,9 @@
             </div>
             <p class="note" id="rateAuto"></p>
             <div class="tblwrap"><table class="sched" id="rateTbl">
-              <thead><tr><th>Rata</th><th>Scadenza</th><th class="num">Importo</th></tr></thead>
+              <thead><tr><th>Rata</th><th>Scadenza</th><th class="num">Importo (IVA incl.)</th><th class="num">di cui imponibile</th></tr></thead>
               <tbody id="rateBody"></tbody>
-              <tfoot><tr><td colspan="2">Totale rate</td><td class="num" id="rateSum">—</td></tr></tfoot>
+              <tfoot><tr><td colspan="2">Totale rate</td><td class="num" id="rateSum">—</td><td class="num" id="rateSumNet">—</td></tr></tfoot>
             </table></div>
             <div class="balance"><span id="rateBal" class="bv ok">—</span>
               <button class="lnk" type="button" onclick="resetRate()">Ripristina rate uguali</button></div>
@@ -1125,9 +1169,9 @@
 
           <div id="planCustom" class="hide">
             <div class="tblwrap"><table class="sched">
-              <thead><tr><th>Voce</th><th>Scadenza</th><th class="num">Importo</th><th class="act"></th></tr></thead>
+              <thead><tr><th>Voce</th><th>Scadenza</th><th class="num">Importo (IVA incl.)</th><th class="num">di cui imponibile</th><th class="act"></th></tr></thead>
               <tbody id="customBody"></tbody>
-              <tfoot><tr><td colspan="2">Totale voci</td><td class="num" id="customSum">—</td><td></td></tr></tfoot>
+              <tfoot><tr><td colspan="2">Totale voci</td><td class="num" id="customSum">—</td><td class="num" id="customSumNet">—</td><td></td></tr></tfoot>
             </table></div>
             <div class="addrow"><button class="add" type="button" onclick="addCustom()">+ Aggiungi voce</button></div>
             <div class="balance"><span>Da allocare:</span><span id="customBal" class="bv ok">—</span>
@@ -1174,7 +1218,6 @@
               <label class="bf"><span>C.F. / P.IVA intestatario</span><input class="in" data-k="pay.sdd.cf"></label>
               <label class="bf"><span>IBAN da addebitare</span><span class="ibanwrap"><input class="in mono ibanin" data-k="pay.sdd.iban" placeholder="IT.."><i class="vdot"></i></span></label>
               <label class="bf"><span>BIC / SWIFT (opz.)</span><span class="ibanwrap"><input class="in mono bicin" data-k="pay.sdd.bic" placeholder="ABCDITMMXXX"><i class="vdot"></i></span></label>
-              <label class="bf"><span>Schema</span><select class="in" data-k="pay.sdd.schema"><option value="">—</option><option value="CORE">CORE</option><option value="B2B">B2B</option></select></label>
               <label class="bf"><span>Tipo addebito</span><input class="in" value="Ricorrente" disabled></label>
             </div>
             <label class="mconsent" style="margin-top:10px"><input type="checkbox" data-k="pay.sdd.consent"><span>Il cliente sottoscrive il mandato SEPA e autorizza gli addebiti ricorrenti alle scadenze del piano. Il rimborso segue le regole dello schema scelto.</span></label>
@@ -1222,6 +1265,19 @@
         <b>5.3 Foro competente</b> — unico foro competente ed esclusivo è quello di Milano.
       </div>
     </div>
+
+    <div class="sec" id="allSec">
+      <div class="h"><span class="num">4</span> Allegati contrattuali</div>
+      <p class="phelp" id="allHelp">Contratti e documenti che formano parte integrante di questa Copia Commissioni (contratto di noleggio hardware, VNE, mandati, condizioni specifiche). Allegali prima di emettere: dopo l'emissione l'elenco è bloccato e sigillato nell'impronta del documento.</p>
+      <ul class="alist" id="allList"></ul>
+      <div class="addrow" id="allAdd">
+        <label class="add" for="allFile">+ Allega un PDF</label>
+        <input type="file" id="allFile" accept="application/pdf,.pdf" class="hide" onchange="addAllegato(this)">
+        <span class="note">PDF, massimo 20 MB per file</span>
+      </div>
+    </div>
+
+    <p class="hidenote">I prezzi unitari delle singole voci non sono esposti in questo documento: fanno fede gli importi complessivi e il piano di pagamento riportati qui sotto.</p>
 
     <div class="summary">
       <div class="deliv" id="deliveryNote"></div>
@@ -1525,13 +1581,15 @@ function blankPayload(){
     cli:{ragione:'',sede:'',dest:'',piva:'',sdi:'',referente:'',contatti:''},
     sw:[{},{},{}], hw:[{},{},{}],
     cons:{attivOre:'',tariffaOra:'60',hwGg:'',spese:'incluse',speseAmt:''},
+    allegati:[],
+    view:{hidePrices:false},
     pay:{ mode:'classica', nol:{tipo:'software', mesi:'12'},
       ant:{on:false,pct:'30',amt:'',manual:'',date:''},
       plan:'unico', unicoDate:'', start:'', fm:false, n:'3', every:'30', rate:[],
       custom:[], method:'bonifico',
       bank:{banca:LP_BANK.banca,iban:LP_BANK.iban,bic:LP_BANK.bic},
       riba:{intest:'',banca:'',iban:'',bic:''},
-      sdd:{intest:'',cf:'',iban:'',bic:'',schema:'',consent:false} },
+      sdd:{intest:'',cf:'',iban:'',bic:'',consent:false} },
     forced:{},
     sign:{lp:null,acc:null,vess:null}
   };
@@ -1594,6 +1652,8 @@ function computeAll(p){
   var imp=0;
   ['sw','hw'].forEach(function(k){ (p[k]||[]).forEach(function(r,i){
     var q=num(r.qty), pr=cents(r.price), t=Math.round(q*pr); imp+=t; c.lines.push({k:k,i:i,totC:t}); }); });
+  c.nol = p.pay.mode==='noleggio';
+  c.mesi = c.nol ? (parseInt(p.pay.nol&&p.pay.nol.mesi,10)||0) : 0;
   c.righeC=imp;
   c.speseC = (p.cons&&p.cons.spese==='addebitate') ? cents(p.cons.speseAmt) : 0;
   c.oreAttiv = p.cons?Math.max(0,num(p.cons.attivOre)):0;
@@ -1601,9 +1661,13 @@ function computeAll(p){
   c.attivC = Math.round(c.oreAttiv*c.tariffaC);
   imp+=c.speseC+c.attivC;
   c.impC=imp; c.ivaC=Math.round(imp*IVA_RATE); c.totC=imp+c.ivaC;
-  var pay=p.pay; var nol=pay.mode==='noleggio';
-  c.baseC = nol ? c.impC : c.totC;
-  c.baseLabel = nol ? 'Totale canoni (IVA esclusa)' : 'Totale ordine (IVA inclusa)';
+  var pay=p.pay;
+  c.baseC = c.totC;
+  c.baseLabel = 'Totale ordine (IVA inclusa)';
+  /* canone derivato dal totale: il prezzo resta quello delle righe */
+  c.canoneC    = (c.nol && c.mesi>0) ? Math.round(c.impC/c.mesi) : 0;
+  c.canoneIvaC = (c.nol && c.mesi>0) ? Math.round(c.totC/c.mesi) : 0;
+  c.hidePrices = !!(p.view && p.view.hidePrices);
   /* anticipo */
   c.antC=0; c.antPct=0;
   if(pay.ant.on){
@@ -1632,6 +1696,10 @@ function computeAll(p){
 }
 
 /* self-check dei calcoli: ricalcola tutto da zero e confronta */
+function netC(gross){ return Math.round(gross/(1+IVA_RATE)); }
+/* ogni importo mostrato in entrambe le forme: IVA inclusa + imponibile */
+function eurBoth(gross){ return eurC(gross)+' <small class="netto">+IVA esc. '+eurC(netC(gross))+'</small>'; }
+function eurBothTxt(gross){ return eurC(gross)+' (imponibile '+eurC(netC(gross))+')'; }
 function calcCheck(p,c){
   var e=[];
   var sum=0; c.lines.forEach(function(l){ sum+=l.totC; });
@@ -1727,7 +1795,6 @@ function validateDoc(p,c){
       fmt('pay.sdd.cf',pay.sdd.cf,taxIdValid,'C.F. / P.IVA intestatario','C.F. / P.IVA intestatario non valido','SDD');
       fmt('pay.sdd.iban',pay.sdd.iban,ibanValid,'IBAN da addebitare','IBAN da addebitare non valido','SDD');
       fmt('pay.sdd.bic',pay.sdd.bic,bicValid,'','BIC non valido','SDD',true);
-      req('pay.sdd.schema',pay.sdd.schema,'Schema SDD (CORE o B2B)','SDD');
       if(!pay.sdd.consent) e.push({k:'pay.sdd.consent',msg:'Sottoscrizione del mandato SEPA',sec:'SDD'});
     }
   }
@@ -1790,14 +1857,14 @@ function lineRow(kind,i){
     '<td><select class="in" data-k="sw.'+i+'.tipo"><option value=""></option><option>Perpetua</option><option>Abbonamento</option></select></td>'+
     '<td><input class="in" data-k="sw.'+i+'.durata"></td>'+
     '<td class="cellnum"><input class="in cellnum" inputmode="decimal" data-k="sw.'+i+'.qty"></td>'+
-    '<td class="cellnum"><input class="in cellnum" inputmode="decimal" data-k="sw.'+i+'.price"></td>'+
-    '<td class="tot" data-tot="sw.'+i+'">€ 0,00</td>'+del;
+    '<td class="cellnum price-col"><input class="in cellnum" inputmode="decimal" data-k="sw.'+i+'.price"></td>'+
+    '<td class="tot price-col" data-tot="sw.'+i+'">€ 0,00</td>'+del;
   else tr.innerHTML=
     '<td><input class="in" data-k="hw.'+i+'.codice"></td>'+
     '<td><input class="in" data-k="hw.'+i+'.descr"></td>'+
     '<td class="cellnum"><input class="in cellnum" inputmode="decimal" data-k="hw.'+i+'.qty"></td>'+
-    '<td class="cellnum"><input class="in cellnum" inputmode="decimal" data-k="hw.'+i+'.price"></td>'+
-    '<td class="tot" data-tot="hw.'+i+'">€ 0,00</td>'+del;
+    '<td class="cellnum price-col"><input class="in cellnum" inputmode="decimal" data-k="hw.'+i+'.price"></td>'+
+    '<td class="tot price-col" data-tot="hw.'+i+'">€ 0,00</td>'+del;
   return tr;
 }
 function renderLines(){
@@ -1817,6 +1884,7 @@ function renderCustom(){
     tr.innerHTML='<td><input class="box" data-k="pay.custom.'+i+'.voce" placeholder="es. Saldo alla consegna"></td>'+
       '<td><input class="box" type="date" data-k="pay.custom.'+i+'.date"></td>'+
       '<td><input class="box amt" inputmode="decimal" data-k="pay.custom.'+i+'.amt"></td>'+
+      '<td class="num netcell">'+eurC(netC(cents((P.pay.custom[i]||{}).amt)))+'</td>'+
       '<td class="act"><button class="rowdel" type="button" aria-label="Rimuovi voce" onclick="delCustom('+i+')">×</button></td>';
     b.appendChild(tr);
   });
@@ -1840,10 +1908,11 @@ function renderRateRows(c){
       var tr=document.createElement('tr');
       tr.innerHTML='<td class="lab">Rata '+(i+1)+' <small style="color:var(--muted);font-weight:400">'+r.off+' gg</small></td>'+
         '<td><input class="box" type="date" data-rate="'+i+'" data-f="date" data-k2="pay.rate.'+i+'.date"></td>'+
-        '<td><input class="box amt" inputmode="decimal" data-rate="'+i+'" data-f="amt" data-k2="pay.rate.'+i+'.amt"></td>';
+        '<td><input class="box amt" inputmode="decimal" data-rate="'+i+'" data-f="amt" data-k2="pay.rate.'+i+'.amt"></td>'+
+        '<td class="num netcell" data-net="'+i+'">—</td>';
       b.appendChild(tr);
     });
-    if(!rows.length) b.innerHTML='<tr><td colspan="3" class="note">Seleziona almeno una scadenza.</td></tr>';
+    if(!rows.length) b.innerHTML='<tr><td colspan="4" class="note">Indica il numero di rate.</td></tr>';
   }
   var act=document.activeElement;
   rows.forEach(function(r,i){
@@ -1851,6 +1920,7 @@ function renderRateRows(c){
     if(d && d!==act) d.value=r.date||'';
     if(a && a!==act) a.value=fmtAmtC(r.amtC);
     if(a) a.closest('tr').classList.toggle('man',!!r.manual);
+    var nc=b.querySelector('[data-net="'+i+'"]'); if(nc) nc.textContent=eurC(netC(r.amtC));
   });
 }
 function resetRate(){ if(isLocked()) return; collect(); P.pay.rate=[]; P.pay.start=P.pay.start||''; refresh(); }
@@ -1878,7 +1948,7 @@ function applyValues(){
   document.querySelectorAll('#doc .ibanin').forEach(function(x){ dot(x,ibanValid(x.value),!x.value.trim()); });
   document.querySelectorAll('#doc .bicin').forEach(function(x){ dot(x,bicValid(x.value),!x.value.trim()); });
 }
-function renderStructure(){ renderLines(); renderCustom(); applyValues(); refresh(); }
+function renderStructure(){ renderLines(); renderCustom(); renderAllegati(); applyValues(); refresh(); }
 
 /* ---- ricalcolo e rendering ---- */
 function refresh(){
@@ -1895,12 +1965,17 @@ function refresh(){
   if(nol && (P.pay.rate||[]).length!==mesi) P.pay.rate=(P.pay.rate||[]).slice(0,mesi);
   setText('pvMode', nol ? ('Noleggio '+(NOLTIPO[pay.nol.tipo]||'—')+' · '+(mesi||'—')+' mesi') : 'Vendita classica');
   setText('nolNote', nol&&mesi ? 'Il piano genera automaticamente '+mesi+' canoni mensili. Alla scadenza il contratto si rinnova tacitamente di 12 mesi salvo disdetta.' : '');
+  setText('canoneNet', c.canoneC?eurC(c.canoneC):'—');
+  setText('canoneIva', c.canoneIvaC?eurC(c.canoneIvaC):'—');
+  setText('nolTot', c.totC?eurC(c.totC):'—');
+  $('doc').classList.toggle('hidePrices', !!c.hidePrices);
+  setText('pvPrezzi', c.hidePrices?'Prezzi di riga nascosti':'Prezzi di riga visibili');
   $('clauseClassica').classList.toggle('hide',nol); $('clauseNoleggio').classList.toggle('hide',!nol);
   setText('vessText',nol?VESS_NOLEGGIO:VESS_CLASSICA);
-  setText('deliveryNote', nol?'Noleggio operativo: importi del piano IVA esclusa, durata minima 12 mesi con rinnovo tacito.':'Vendita classica: importi del piano IVA inclusa.');
+  setText('deliveryNote', nol?('Noleggio operativo'+(mesi?' di '+mesi+' mesi':'')+': i canoni sono indicati IVA inclusa e con imponibile. Rinnovo tacito di 12 mesi salvo disdetta.'):'Vendita classica: gli importi del piano sono indicati IVA inclusa e con imponibile.');
   /* anticipo */
   $('stepAnt').classList.toggle('off',!pay.ant.on);
-  setText('pvAnt', pay.ant.on? eurC(c.antC)+' ('+(''+c.antPct).replace('.',',')+'%)' : 'Nessuno');
+  setText('pvAnt', pay.ant.on? eurBothTxt(c.antC)+' · '+(''+c.antPct).replace('.',',')+'%' : 'Nessuno');
   var act=document.activeElement;
   if(pay.ant.on){
     if(pay.ant.manual==='1'){ if($('antPct')!==act) $('antPct').value=(''+c.antPct).replace('.',','); }
@@ -1912,22 +1987,22 @@ function refresh(){
   $('planRate').classList.toggle('hide',pay.plan!=='rateale');
   $('planCustom').classList.toggle('hide',pay.plan!=='custom');
   var planName={unico:'Saldo unico',rateale:'Rateale',custom:'Personalizzato'}[pay.plan]||'—';
-  setText('pvPlan', planName+' · '+eurC(c.resC));
+  setText('pvPlan', planName+' · '+eurBothTxt(c.resC));
   if(pay.plan==='unico'){
     if($('unicoDate')!==act && !pay.unicoDate){ $('unicoDate').value=c.rows[0].date; }
-    setText('unicoAmt',eurC(c.resC));
+    $('unicoAmt').innerHTML=eurBoth(c.resC);
   }
   if(pay.plan==='rateale'){
     $('rateCfg').classList.toggle('hide',nol);
     setText('rateAuto', nol ? 'Rate determinate dalla durata del noleggio: '+(mesi||0)+' canoni mensili.' : '');
     if($('rateStart')!==act && !pay.start){ $('rateStart').value=c.docDate; }
     renderRateRows(c);
-    setText('rateSum',eurC(c.planSumC));
+    setText('rateSum',eurC(c.planSumC)); setText('rateSumNet',eurC(netC(c.planSumC)));
     var rb=$('rateBal'); var okR=c.planSumC===c.resC;
     rb.className='bv '+(okR?'ok':'ko'); rb.textContent= okR?'Le rate coprono il residuo':'Differenza '+eurC(c.resC-c.planSumC);
   }
   if(pay.plan==='custom'){
-    setText('customSum',eurC(c.planSumC));
+    setText('customSum',eurC(c.planSumC)); setText('customSumNet',eurC(netC(c.planSumC)));
     var cb=$('customBal'); var okC=c.planSumC===c.resC;
     cb.className='bv '+(okC?'ok':'ko'); cb.textContent=eurC(c.resC-c.planSumC);
   }
@@ -1940,8 +2015,8 @@ function refresh(){
   $('blkSdd').classList.toggle('hide',!(needRes && pay.method==='sdd'));
   /* consegna */
   $('speseRow').classList.toggle('hide',P.cons.spese!=='addebitate');
-  setText('attivAmt',eurC(c.attivC));
-  var dp=[]; if(c.attivC) dp.push('Attivazione '+eurC(c.attivC)); dp.push(P.cons.spese==='addebitate'?'Spese '+eurC(c.speseC):'Spese incluse');
+  $('attivAmt').innerHTML=eurBoth(Math.round(c.attivC*(1+IVA_RATE)));
+  var dp=[]; if(c.attivC) dp.push('Attivazione '+eurC(c.attivC)+' + IVA'); dp.push(P.cons.spese==='addebitate'?'Spese '+eurC(c.speseC)+' + IVA':'Spese incluse');
   setText('pvDeliv', dp.join(' · '));
   renderTotals(c);
   renderForced();
@@ -1950,7 +2025,7 @@ function refresh(){
 }
 function renderDock(c){
   var d=$('dock'); if(!d) return;
-  setText('dockTot',eurC(c.totC));
+  $('dockTot').innerHTML=eurBoth(c.totC);
   var chk=$('dockChk'); chk.className='dchk '+(c.calcOk?'ok':'ko'); chk.textContent=c.calcOk?'Piano coerente':'Piano da sistemare';
   var lab={bozza:'Bozza',emesso:'Emesso · attesa firma cliente',firmato:'Firmato'}[DOC.status]||DOC.status;
   if(DOC.viewer) lab='Sola consultazione';
@@ -1970,9 +2045,21 @@ function renderTotals(c){
   h+='<div class="l"><span>Totale imponibile</span><span>'+eurC(c.impC)+'</span></div>';
   h+='<div class="l"><span>IVA (22%)</span><span>'+eurC(c.ivaC)+'</span></div>';
   h+='<div class="l grand"><span>Totale ordine (IVA incl.)</span><span>'+eurC(c.totC)+'</span></div>';
-  if(P.pay.mode==='noleggio') h+='<div class="l"><span>Base del piano <small>(IVA esclusa)</small></span><span>'+eurC(c.baseC)+'</span></div>';
-  h+='<div class="l head2"><span>Piano di pagamento'+(P.pay.mode==='noleggio'?' · IVA esclusa':' · IVA inclusa')+'</span><span></span></div>';
-  c.sched.forEach(function(r){ h+='<div class="l sub"><span>'+esc(r.label)+' · '+isoFmt(r.date)+'</span><span>'+eurC(r.amtC)+'</span></div>'; });
+  if(c.nol && c.mesi>0) h+='<div class="l sub"><span>Canone mensile ('+c.mesi+' mesi)</span><span>'+eurC(c.canoneIvaC)+' <small class="netto">'+eurC(c.canoneC)+'</small></span></div>';
+  h+='<div class="l head2"><span>Piano di pagamento · importi IVA inclusa</span><span>imponibile</span></div>';
+  var sched=c.sched, uguali=sched.length>6 && sched.every(function(r){ return r.amtC===sched[0].amtC; });
+  if(uguali){
+    h+='<div class="l sub"><span>'+sched.length+' rate da '+eurC(sched[0].amtC)+'</span><span>'+eurC(sched[0].amtC)+' <small class="netto">'+eurC(netC(sched[0].amtC))+'</small></span></div>';
+    h+='<div class="l sub"><span>dal '+isoFmt(sched[0].date)+' al '+isoFmt(sched[sched.length-1].date)+'</span><span></span></div>';
+  } else if(sched.length>6){
+    sched.slice(0,3).forEach(function(r){ h+='<div class="l sub"><span>'+esc(r.label)+' · '+isoFmt(r.date)+'</span><span>'+eurC(r.amtC)+' <small class="netto">'+eurC(netC(r.amtC))+'</small></span></div>'; });
+    h+='<div class="l sub"><span>… altre '+(sched.length-4)+' scadenze</span><span></span></div>';
+    var last=sched[sched.length-1];
+    h+='<div class="l sub"><span>'+esc(last.label)+' · '+isoFmt(last.date)+'</span><span>'+eurC(last.amtC)+' <small class="netto">'+eurC(netC(last.amtC))+'</small></span></div>';
+  } else {
+    sched.forEach(function(r){ h+='<div class="l sub"><span>'+esc(r.label)+' · '+isoFmt(r.date)+'</span><span>'+eurC(r.amtC)+' <small class="netto">'+eurC(netC(r.amtC))+'</small></span></div>'; });
+  }
+  h+='<div class="l sub"><span>Totale del piano</span><span>'+eurC(c.schedSumC)+' <small class="netto">'+eurC(netC(c.schedSumC))+'</small></span></div>';
   var ok=c.calcOk;
   h+='<div class="l chk '+(ok?'ok':'ko')+'"><span>'+(ok?'Piano = totale':'Piano non coerente')+'</span><span>'+(ok?'✓ '+eurC(c.schedSumC):'Δ '+eurC(c.diffC))+'</span></div>';
   $('totBox').innerHTML=h;
@@ -2021,8 +2108,9 @@ function onDocChange(e){
   }
 }
 function applyModeDefaults(){
-  if(P.pay.mode==='noleggio'){ P.pay.plan='rateale'; P.pay.method='sdd'; if(!P.pay.nol.tipo) P.pay.nol.tipo='software'; if(!P.pay.nol.mesi) P.pay.nol.mesi='12'; }
-  else { P.pay.plan='unico'; P.pay.n='3'; P.pay.every='30'; P.pay.method='bonifico'; }
+  P.view=P.view||{};
+  if(P.pay.mode==='noleggio'){ P.pay.plan='rateale'; P.pay.method='sdd'; if(!P.pay.nol.tipo) P.pay.nol.tipo='software'; if(!P.pay.nol.mesi) P.pay.nol.mesi='12'; P.view.hidePrices=true; }
+  else { P.pay.plan='unico'; P.pay.n='3'; P.pay.every='30'; P.pay.method='bonifico'; P.view.hidePrices=false; }
   P.pay.rate=[]; renderStructure();
 }
 
@@ -2147,7 +2235,7 @@ function applyLock(){
   ['acc','vess'].forEach(function(s){ var box=$('slot-'+s); box.querySelector('.sigwait').classList.toggle('hide',locked); });
   ['lp','acc','vess'].forEach(renderSign);
   setText('hashMain', DOC.hash||'— (calcolata all\'emissione)');
-  if(LAST.c) renderDock(LAST.c); renderForced();
+  if(LAST.c) renderDock(LAST.c); renderForced(); renderAllegati();
   setText('hashTs', P.sign&&P.sign.lp?P.sign.lp.ts:'—');
 }
 
@@ -2544,7 +2632,10 @@ function migrate(p){
   if(p && p.v===2){ var b=blankPayload(); var m=deepMerge(b,p); if(!m.pay.bank.iban){ m.pay.bank=clone(LP_BANK); }
     if(p.pay && p.pay.offsets && p.pay.offsets.length){ var o=p.pay.offsets.slice().sort(function(a,c){return a-c;});
       m.pay.n=String(o.length); m.pay.every=String(o[0]||30); delete m.pay.offsets; }
-    if(m.pay.sdd) delete m.pay.sdd.cid;
+    if(m.pay.sdd){ delete m.pay.sdd.cid; delete m.pay.sdd.schema; }
+    if(!Array.isArray(m.allegati)) m.allegati=[];
+    if(!m.view) m.view={hidePrices:false};
+    if(m.pay&&m.pay.nol) delete m.pay.nol.canone;
     return m; }
   var n=blankPayload(); if(!p) return n;
   var s=p.stat||[];
@@ -3126,6 +3217,66 @@ async function addUnita(){
   var r=await SB.from('listino_unita').upsert({code:v.toLowerCase(),label:v,ord:(L.unita.length+1)*10});
   if(r.error){ toast(r.error.message); return; }
   $('unNew').value=''; await renderUnita(); toast('Unità aggiunta');
+}
+
+/* ================= ALLEGATI CONTRATTUALI ================= */
+function allUrl(path){ return SB_AUTO.url+'/storage/v1/object/public/allegati/'+path.split('/').map(encodeURIComponent).join('/'); }
+function fmtSize(b){ b=+b||0; return b>=1048576?(b/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(b/1024))+' KB'; }
+function renderAllegati(){
+  var ul=$('allList'); if(!ul) return;
+  var arr=(P&&P.allegati)||[], ed=!isLocked();
+  $('allAdd').classList.toggle('hide',!ed);
+  $('allHelp').classList.toggle('hide',!ed && !arr.length);
+  if(!arr.length){
+    ul.innerHTML='<li class="empty">'+(ed?'Nessun allegato. Aggiungi qui i contratti che accompagnano il documento.':'Nessun allegato.')+'</li>';
+    return;
+  }
+  ul.innerHTML=arr.map(function(a,i){
+    return '<li><span class="ai">PDF</span><span class="an"><b>'+esc(a.label||a.name)+'</b>'+
+      '<small>'+esc(a.name)+' · '+fmtSize(a.size)+(a.hash?' · SHA-256 '+esc(a.hash.slice(0,10)):'')+'</small>'+
+      (ed?'<input class="box" data-k="allegati.'+i+'.label" placeholder="Descrizione (es. Contratto noleggio hardware)" value="'+esc(a.label||'')+'">':'')+
+      '</span><span class="aact">'+
+      '<button type="button" class="abtn" onclick="openAllegato('+i+')">Apri</button>'+
+      (ed?'<button type="button" class="abtn icon del" onclick="delAllegato('+i+')" aria-label="Rimuovi allegato">×</button>':'')+
+      '</span></li>';
+  }).join('');
+}
+function openAllegato(i){
+  var a=(P.allegati||[])[i]; if(!a) return;
+  window.open(allUrl(a.path),'_blank','noopener');
+}
+async function addAllegato(input){
+  var f=input.files&&input.files[0]; input.value='';
+  if(!f) return;
+  if(isLocked()){ toast('Documento emesso: allegati bloccati'); return; }
+  if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ toast('Sono ammessi solo file PDF'); return; }
+  if(f.size>20*1024*1024){ toast('Il file supera 20 MB'); return; }
+  if(!(sbConnected&&SB)){ toast('Serve la connessione al database per allegare'); return; }
+  collect();
+  if(!DOC.id){ var r0=await persist('bozza'); if(!r0.remote){ toast('Salva prima la bozza: allegato non caricato'); return; } }
+  toast('Caricamento allegato…');
+  var path=DOC.id+'/'+randHex(8)+'/'+f.name.replace(/[^A-Za-z0-9._ -]/g,'_');
+  var up=await SB.storage.from('allegati').upload(path,f,{contentType:'application/pdf',upsert:false});
+  if(up.error){ toast('Caricamento non riuscito: '+up.error.message); return; }
+  var hash='';
+  try{ var buf=await f.arrayBuffer(); var d=await crypto.subtle.digest('SHA-256',buf);
+    hash=Array.prototype.map.call(new Uint8Array(d),function(b){return ('0'+b.toString(16)).slice(-2);}).join(''); }catch(e){}
+  P.allegati=P.allegati||[];
+  P.allegati.push({name:f.name,path:path,size:f.size,hash:hash,label:'',ts:new Date().toISOString(),by:USER?USER.email:''});
+  await persist('bozza');
+  renderAllegati(); refresh();
+  toast('Allegato aggiunto');
+}
+async function delAllegato(i){
+  if(isLocked()) return;
+  var a=(P.allegati||[])[i]; if(!a) return;
+  if(!confirm('Rimuovere l\'allegato "'+(a.label||a.name)+'"?')) return;
+  if(sbConnected&&SB){ try{ await SB.storage.from('allegati').remove([a.path]); }catch(e){} }
+  P.allegati.splice(i,1);
+  renderAllegati();
+  await persist('bozza');
+  refresh();
+  toast('Allegato rimosso');
 }
 
 </script>
