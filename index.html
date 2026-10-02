@@ -832,6 +832,27 @@
   #doc.hidePrices .hidenote{display:block}
   #doc.docLocked .viewbar,#doc.exporting .viewbar{display:none}
   @media print{ .viewbar{display:none} }
+  .tot small.mult{display:block;font-size:10px;color:var(--muted);font-weight:400}
+  .durin{text-align:right}
+  #doc.hidePrices .tot small.mult{display:none}
+  .srfile{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .dropzone{display:flex;align-items:center;gap:14px;border:2px dashed var(--line);border-radius:12px;padding:16px 18px;
+    cursor:pointer;background:var(--tint2);transition:border-color .15s,background .15s;min-height:72px}
+  .dropzone:hover,.dropzone.over{border-color:var(--teal);background:var(--tint)}
+  .dropzone:focus-within{outline:3px solid rgba(21,138,136,.45);outline-offset:2px}
+  .dropzone .dzi{width:46px;height:46px;border-radius:12px;background:#fff;border:1px solid var(--line);color:var(--teal-deep);
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .dropzone .dzt{flex:1;min-width:0}
+  .dropzone .dzt b{display:block;font-size:14px;color:var(--ink)}
+  .dropzone .dzt small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .dropzone .dzb{background:var(--teal-deep);color:#fff;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;white-space:nowrap}
+  .dropzone.busy{opacity:.65;pointer-events:none}
+  .dzmsg{display:none;margin-top:8px;font-size:12px;border-radius:9px;padding:9px 12px;line-height:1.45}
+  .dzmsg.show{display:block}
+  .dzmsg.err{background:#fdf3f1;border:1px solid #f0cdc5;color:var(--danger)}
+  .dzmsg.wait{background:var(--tint);border:1px solid var(--line);color:var(--teal-deep)}
+  .dzmsg b{display:block;margin-bottom:2px}
+  .dzmsg code{font-family:ui-monospace,monospace;font-size:11.5px;background:#fff;border:1px solid #f0cdc5;border-radius:5px;padding:1px 5px}
 </style>
 </head>
 <body class="locked">
@@ -1059,11 +1080,11 @@
       <div class="h"><span class="num">1</span> Software &amp; Licenze — Infrastruttura, SaaS, Cloud</div>
       <div class="tblwrap"><table id="tblSw">
         <thead><tr>
-          <th style="width:34%">Nome software / servizio</th><th style="width:18%">Tipo licenza</th><th style="width:14%">Durata</th>
+          <th style="width:32%">Nome software / servizio</th><th style="width:16%">Tipo licenza</th><th class="num" style="width:14%">Durata (mesi)</th>
           <th class="num" style="width:9%">Q.tà</th><th class="num price-col" style="width:13%">Prezzo unit.</th><th class="num price-col" style="width:14%">Totale (IVA esc.)</th><th class="act"></th>
         </tr></thead><tbody></tbody>
       </table></div>
-      <div class="addrow"><button class="add" type="button" onclick="addLine('sw')">+ Aggiungi riga software</button><button class="add fromlist" type="button" onclick="openPicker('sw')">&#9776; Scegli dal listino</button></div>
+      <div class="addrow"><button class="add fromlist" type="button" onclick="openPicker('sw')">&#9776; Scegli dal listino</button><button class="add" type="button" onclick="addLine('sw')">+ Aggiungi riga software</button></div>
     </div>
 
     <div class="sec">
@@ -1074,7 +1095,7 @@
           <th class="num" style="width:9%">Q.tà</th><th class="num price-col" style="width:14%">Prezzo unit.</th><th class="num price-col" style="width:15%">Totale (IVA esc.)</th><th class="act"></th>
         </tr></thead><tbody></tbody>
       </table></div>
-      <div class="addrow"><button class="add" type="button" onclick="addLine('hw')">+ Aggiungi riga hardware</button><button class="add fromlist" type="button" onclick="openPicker('hw')">&#9776; Scegli dal listino</button></div>
+      <div class="addrow"><button class="add fromlist" type="button" onclick="openPicker('hw')">&#9776; Scegli dal listino</button><button class="add" type="button" onclick="addLine('hw')">+ Aggiungi riga hardware</button></div>
     </div>
 
     <!-- PAYMENT -->
@@ -1270,10 +1291,16 @@
       <div class="h"><span class="num">4</span> Allegati contrattuali</div>
       <p class="phelp" id="allHelp">Contratti e documenti che formano parte integrante di questa Copia Commissioni (contratto di noleggio hardware, VNE, mandati, condizioni specifiche). Allegali prima di emettere: dopo l'emissione l'elenco è bloccato e sigillato nell'impronta del documento.</p>
       <ul class="alist" id="allList"></ul>
-      <div class="addrow" id="allAdd">
-        <label class="add" for="allFile">+ Allega un PDF</label>
-        <input type="file" id="allFile" accept="application/pdf,.pdf" class="hide" onchange="addAllegato(this)">
-        <span class="note">PDF, massimo 20 MB per file</span>
+      <div id="allAdd">
+        <label class="dropzone" id="allDrop" for="allFile">
+          <span class="dzi" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          </span>
+          <span class="dzt"><b>Allega un contratto in PDF</b><small>Trascina il file qui oppure clicca per sceglierlo · massimo 5 MB</small></span>
+          <span class="dzb">Scegli file</span>
+        </label>
+        <input type="file" id="allFile" accept="application/pdf,.pdf" class="srfile" onchange="addAllegato(this)">
+        <div class="dzmsg" id="allMsg"></div>
       </div>
     </div>
 
@@ -1643,6 +1670,13 @@ function rateEditDate(pay,k,val){
   if(pay.rate[k]){ pay.rate[k].date=val; pay.rate[k].mDate=isoOk(val); }
 }
 
+/* un abbonamento con durata in mesi moltiplica il canone: 16,95 × 12 = 203,40 */
+function lineMesi(r){
+  if(!r || r.nomult) return 1;
+  if((r.tipo||'')!=='Abbonamento') return 1;
+  var m=parseInt(r.mesi,10);
+  return (m>0)?m:1;
+}
 function computeAll(p){
   var c={lines:[], errors:[]};
   var docDate=isoOk(p.head&&p.head.data)?p.head.data:isoToday();
@@ -1651,7 +1685,8 @@ function computeAll(p){
   c.validUntil = vd>0 ? isoAdd(docDate,vd) : '';
   var imp=0;
   ['sw','hw'].forEach(function(k){ (p[k]||[]).forEach(function(r,i){
-    var q=num(r.qty), pr=cents(r.price), t=Math.round(q*pr); imp+=t; c.lines.push({k:k,i:i,totC:t}); }); });
+    var q=num(r.qty), pr=cents(r.price), m=lineMesi(r), t=Math.round(q*pr*m);
+    imp+=t; c.lines.push({k:k,i:i,totC:t,mesi:m}); }); });
   c.nol = p.pay.mode==='noleggio';
   c.mesi = c.nol ? (parseInt(p.pay.nol&&p.pay.nol.mesi,10)||0) : 0;
   c.righeC=imp;
@@ -1824,7 +1859,7 @@ async function sha256Hex(str){
 }
 async function contentHash(p){ return sha256Hex(contentString(p)); }
 
-if(typeof module!=='undefined'){ module.exports={num:num,cents:cents,eurC:eurC,isoAdd:isoAdd,isoEom:isoEom,ibanValid:ibanValid,
+if(typeof module!=='undefined'){ module.exports={num:num,lineMesi:lineMesi,cents:cents,eurC:eurC,isoAdd:isoAdd,isoEom:isoEom,ibanValid:ibanValid,
   taxIdValid:taxIdValid,sdiPecValid:sdiPecValid,blankPayload:blankPayload,computeAll:computeAll,calcCheck:calcCheck,
   validateDoc:validateDoc,rateOffsets:rateOffsets,rateEditAmt:rateEditAmt,rateEditDate:rateEditDate,contentHash:contentHash,contentString:contentString}; }
 
@@ -1855,7 +1890,7 @@ function lineRow(kind,i){
   if(kind==='sw') tr.innerHTML=
     '<td><input class="in" data-k="sw.'+i+'.nome"></td>'+
     '<td><select class="in" data-k="sw.'+i+'.tipo"><option value=""></option><option>Perpetua</option><option>Abbonamento</option></select></td>'+
-    '<td><input class="in" data-k="sw.'+i+'.durata"></td>'+
+    '<td class="cellnum"><input class="in cellnum durin" inputmode="numeric" data-k="sw.'+i+'.mesi" placeholder="—"></td>'+
     '<td class="cellnum"><input class="in cellnum" inputmode="decimal" data-k="sw.'+i+'.qty"></td>'+
     '<td class="cellnum price-col"><input class="in cellnum" inputmode="decimal" data-k="sw.'+i+'.price"></td>'+
     '<td class="tot price-col" data-tot="sw.'+i+'">€ 0,00</td>'+del;
@@ -1955,7 +1990,9 @@ function refresh(){
   collect();
   var c=computeAll(P); LAST.c=c;
   var pay=P.pay, nol=pay.mode==='noleggio';
-  c.lines.forEach(function(l){ var td=document.querySelector('[data-tot="'+l.k+'.'+l.i+'"]'); if(td) td.textContent=eurC(l.totC); });
+  c.lines.forEach(function(l){ var td=document.querySelector('[data-tot="'+l.k+'.'+l.i+'"]');
+    if(!td) return;
+    td.innerHTML = eurC(l.totC) + (l.mesi>1 ? '<small class="mult">'+l.mesi+' mesi</small>' : ''); });
   setText('validUntil',c.validUntil?isoFmt(c.validUntil):'—');
   /* segmented state */
   document.querySelectorAll('#doc .pseg label').forEach(function(l){ var i=l.querySelector('input'); if(i) l.classList.toggle('on',i.checked); });
@@ -2072,6 +2109,9 @@ function onDocInput(e){
   if(t.classList.contains('ibanin')) dot(t,ibanValid(t.value),!t.value.trim());
   if(t.classList.contains('bicin')) dot(t,bicValid(t.value),!t.value.trim());
   if(isLocked()) return;
+  var mk=(t.getAttribute&&t.getAttribute('data-k'))||'';
+  var mm=/^sw\.(\d+)\.(mesi|tipo|price|qty)$/.exec(mk);
+  if(mm && P.sw[+mm[1]]) delete P.sw[+mm[1]].nomult;
   if(t.hasAttribute('data-rate')) return;        /* gestite su change */
   if(t.id==='antAmt'){ $('antManual').value='1'; }
   if(t.id==='antPct'){ $('antManual').value=''; }
@@ -2635,6 +2675,14 @@ function migrate(p){
     if(m.pay.sdd){ delete m.pay.sdd.cid; delete m.pay.sdd.schema; }
     if(!Array.isArray(m.allegati)) m.allegati=[];
     if(!m.view) m.view={hidePrices:false};
+    (m.sw||[]).forEach(function(r){
+      if(r.mesi===undefined){
+        var d=(''+(r.durata||'')).match(/\d+/);
+        r.mesi = d?d[0]:'';
+        r.nomult = true;   /* il totale resta quello con cui il documento è stato creato */
+      }
+      delete r.durata;
+    });
     if(m.pay&&m.pay.nol) delete m.pay.nol.canone;
     return m; }
   var n=blankPayload(); if(!p) return n;
@@ -2643,7 +2691,7 @@ function migrate(p){
   if(/^\d{1,2}$/.test(s[1]||'')&&/^\d{1,2}$/.test(s[2]||'')) n.head.data='2026-'+('0'+s[2]).slice(-2)+'-'+('0'+s[1]).slice(-2);
   n.creator={nome:s[3]||'',cognome:s[4]||'',societa:s[5]||''};
   n.cli={ragione:s[6]||'',sede:s[7]||'',dest:s[8]||'',piva:s[9]||'',sdi:s[10]||'',referente:s[11]||'',contatti:s[12]||''};
-  n.sw=(p.sw||[]).map(function(r){ return {nome:r[0],tipo:r[1],durata:r[2],qty:r[3],price:r[4]}; });
+  n.sw=(p.sw||[]).map(function(r){ var d=(''+(r[2]||'')).match(/\d+/); return {nome:r[0],tipo:r[1],mesi:d?d[0]:'',nomult:true,qty:r[3],price:r[4]}; });
   n.hw=(p.hw||[]).map(function(r){ return {codice:r[0],descr:r[1],qty:r[2],price:r[3]}; });
   if(!n.sw.length) n.sw=[{}]; if(!n.hw.length) n.hw=[{}];
   if(p.payMode==='noleggio'){ n.pay.mode='noleggio'; n.pay.plan='rateale'; n.pay.nol={tipo:'software',mesi:'12'}; n.pay.method='sdd'; }
@@ -3179,7 +3227,7 @@ function addFromListino(id){
   collect();
   var kind=PICK.kind;
   var row = kind==='sw'
-    ? {nome:it.nome, tipo:(it.unita==='una tantum'?'Perpetua':'Abbonamento'), durata:(it.unita==='mensile'?'1 mese':it.unita==='annuo'?'12 mesi':''), qty:'1', price:fmtAmtC(Math.round(pr*100))}
+    ? {nome:it.nome, tipo:(it.unita==='una tantum'?'Perpetua':'Abbonamento'), mesi:(it.unita==='mensile'?'1':it.unita==='annuo'?'12':''), qty:'1', price:fmtAmtC(Math.round(pr*100))}
     : {codice:it.id.toUpperCase(), descr:it.nome+(it.contenuto?' — '+it.contenuto:'')+(it.specs?' · '+it.specs:''), qty:'1', price:fmtAmtC(Math.round(pr*100))};
   var arr=P[kind];
   var empty=arr.findIndex(function(r){ return !((r.nome||r.codice||r.descr||'').trim()) && !num(r.price); });
@@ -3226,6 +3274,7 @@ function renderAllegati(){
   var ul=$('allList'); if(!ul) return;
   var arr=(P&&P.allegati)||[], ed=!isLocked();
   $('allAdd').classList.toggle('hide',!ed);
+  if(ed) initDropzone(); else allMsg(null);
   $('allHelp').classList.toggle('hide',!ed && !arr.length);
   if(!arr.length){
     ul.innerHTML='<li class="empty">'+(ed?'Nessun allegato. Aggiungi qui i contratti che accompagnano il documento.':'Nessun allegato.')+'</li>';
@@ -3241,31 +3290,62 @@ function renderAllegati(){
       '</span></li>';
   }).join('');
 }
+function initDropzone(){
+  var dz=$('allDrop'); if(!dz || dz._init) return; dz._init=true;
+  ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.remove('over'); }); });
+  dz.addEventListener('drop',function(e){
+    var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(!f) return;
+    addAllegato({files:[f],value:''});
+  });
+}
 function openAllegato(i){
   var a=(P.allegati||[])[i]; if(!a) return;
   window.open(allUrl(a.path),'_blank','noopener');
 }
+var ALL_MAX=5*1024*1024;
+function allMsg(kind,title,body){
+  var m=$('allMsg'); if(!m) return;
+  if(!kind){ m.className='dzmsg'; m.innerHTML=''; return; }
+  m.className='dzmsg show '+kind;
+  m.innerHTML='<b>'+esc(title)+'</b>'+(body||'');
+}
+function allBusy(on){ var d=$('allDrop'); if(d) d.classList.toggle('busy',!!on); }
+function allErrText(msg){
+  msg=''+(msg||'');
+  if(/bucket not found/i.test(msg))
+    return {t:'Archivio allegati non ancora attivo',b:'Manca lo spazio di archiviazione sul database. Esegui una volta sola lo script <code>supabase_patch2e.sql</code> in Supabase → SQL Editor, poi riprova.'};
+  if(/already exists|duplicate/i.test(msg))
+    return {t:'File già presente',b:'Un file con lo stesso nome è già allegato a questo documento.'};
+  if(/row-level security|not authorized|permission/i.test(msg))
+    return {t:'Non hai i permessi su questo documento',b:'Puoi allegare file solo ai documenti che hai creato tu, o se fai parte del team Lotus Pecas.'};
+  if(/payload too large|exceeded the maximum/i.test(msg))
+    return {t:'File troppo grande per il server',b:'Riduci il PDF e riprova.'};
+  return {t:'Caricamento non riuscito',b:esc(msg)};
+}
 async function addAllegato(input){
   var f=input.files&&input.files[0]; input.value='';
   if(!f) return;
-  if(isLocked()){ toast('Documento emesso: allegati bloccati'); return; }
-  if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ toast('Sono ammessi solo file PDF'); return; }
-  if(f.size>20*1024*1024){ toast('Il file supera 20 MB'); return; }
-  if(!(sbConnected&&SB)){ toast('Serve la connessione al database per allegare'); return; }
+  allMsg(null);
+  if(isLocked()){ allMsg('err','Documento emesso','Gli allegati non si possono più modificare: usa "Modifica" per tornare in bozza.'); return; }
+  if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ allMsg('err','Formato non ammesso','Sono accettati solo file PDF.'); return; }
+  if(f.size>ALL_MAX){ allMsg('err','File troppo grande','"'+esc(f.name)+'" pesa '+fmtSize(f.size)+'. Il limite è 5 MB: comprimi il PDF e riprova.'); return; }
+  if(!(sbConnected&&SB)){ allMsg('err','Database non collegato','Serve la connessione al database per archiviare gli allegati.'); return; }
   collect();
-  if(!DOC.id){ var r0=await persist('bozza'); if(!r0.remote){ toast('Salva prima la bozza: allegato non caricato'); return; } }
-  toast('Caricamento allegato…');
+  allBusy(true); allMsg('wait','Caricamento di "'+esc(f.name)+'" in corso…','');
+  if(!DOC.id){ var r0=await persist('bozza'); if(!r0.remote){ allBusy(false); allMsg('err','Bozza non salvata','Il documento va salvato prima di allegare un file.'); return; } }
   var path=DOC.id+'/'+randHex(8)+'/'+f.name.replace(/[^A-Za-z0-9._ -]/g,'_');
   var up=await SB.storage.from('allegati').upload(path,f,{contentType:'application/pdf',upsert:false});
-  if(up.error){ toast('Caricamento non riuscito: '+up.error.message); return; }
+  if(up.error){ allBusy(false); var e=allErrText(up.error.message); allMsg('err',e.t,e.b); return; }
   var hash='';
   try{ var buf=await f.arrayBuffer(); var d=await crypto.subtle.digest('SHA-256',buf);
     hash=Array.prototype.map.call(new Uint8Array(d),function(b){return ('0'+b.toString(16)).slice(-2);}).join(''); }catch(e){}
   P.allegati=P.allegati||[];
   P.allegati.push({name:f.name,path:path,size:f.size,hash:hash,label:'',ts:new Date().toISOString(),by:USER?USER.email:''});
   await persist('bozza');
+  allBusy(false); allMsg(null);
   renderAllegati(); refresh();
-  toast('Allegato aggiunto');
+  toast('Allegato aggiunto: '+f.name);
 }
 async function delAllegato(i){
   if(isLocked()) return;
