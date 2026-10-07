@@ -1167,7 +1167,8 @@
           <div class="fld"><label>P.IVA / C.F.</label><span class="val"><input class="in" id="cliPiva" data-k="cli.piva" list="cliPive" autocomplete="off"></span></div>
           <div class="fld"><label>Codice SDI / PEC</label><span class="val"><input class="in" data-k="cli.sdi"></span></div>
           <div class="fld"><label>Referente</label><span class="val"><input class="in" data-k="cli.referente"></span></div>
-          <div class="fld"><label>Tel / Email</label><span class="val"><input class="in" data-k="cli.contatti"></span></div>
+          <div class="fld"><label>Telefono</label><span class="val"><input class="in" data-k="cli.contatti" inputmode="tel"></span></div>
+          <div class="fld"><label>Email</label><span class="val"><input class="in" data-k="cli.email" inputmode="email" autocomplete="off"></span></div>
         </div>
       </div>
     </div>
@@ -1672,7 +1673,8 @@
         <label class="ff"><span>Destinazione merce</span><input class="box" id="ceDest"></label>
         <label class="ff"><span>Codice SDI / PEC</span><input class="box" id="ceSdi"></label>
         <label class="ff"><span>Referente</span><input class="box" id="ceReferente"></label>
-        <label class="ff"><span>Telefono / Email</span><input class="box" id="ceContatti"></label>
+        <label class="ff"><span>Telefono</span><input class="box" id="ceContatti" inputmode="tel"></label>
+        <label class="ff"><span>Email</span><input class="box" id="ceEmail" inputmode="email"></label>
         <label class="ff"><span>Note interne</span><input class="box" id="ceNote" placeholder="non compare nei documenti"></label>
       </div>
       <div class="merr" id="ceErr"></div>
@@ -1745,7 +1747,7 @@ function blankPayload(){
   return { v:2,
     head:{numero:'',data:today,validita:'30'},
     creator:{nome:'',cognome:'',societa:''},
-    cli:{ragione:'',sede:'',dest:'',piva:'',sdi:'',referente:'',contatti:''},
+    cli:{ragione:'',sede:'',dest:'',piva:'',sdi:'',referente:'',contatti:'',email:''},
     sw:[{},{},{}], hw:[{},{},{}],
     cons:{attivOre:'',tariffaOra:'60',hwGg:'',spese:'incluse',speseAmt:''},
     allegati:[],
@@ -1931,7 +1933,9 @@ function validateDoc(p,c){
   fmt('cli.piva',p.cli.piva,taxIdValid,'P.IVA / C.F.','P.IVA / C.F. non valida','Cliente');
   fmt('cli.sdi',p.cli.sdi,sdiPecValid,'Codice SDI o PEC','Codice SDI (7 caratteri) o PEC non valida','Cliente');
   req('cli.referente',p.cli.referente,'Referente','Cliente');
-  req('cli.contatti',p.cli.contatti,'Telefono o email','Cliente');
+  if(!(''+(p.cli.contatti||'')).trim() && !(''+(p.cli.email||'')).trim())
+    e.push({k:'cli.contatti',msg:'Telefono o email: serve almeno un recapito',sec:'Cliente'});
+  fmt('cli.email',p.cli.email,emailValid,'Email','Indirizzo email non valido','Cliente',true);
   var anyLine=false;
   [['sw','Software','nome'],['hw','Hardware','descr']].forEach(function(t){
     (p[t[0]]||[]).forEach(function(r,i){
@@ -1987,6 +1991,9 @@ function canon(o){
 }
 function contentString(p){
   var q=JSON.parse(JSON.stringify(p)); delete q.sign; delete q.meta;
+  /* un campo aggiunto e lasciato vuoto non deve cambiare l'impronta dei documenti
+     emessi prima che esistesse: vuoto equivale ad assente */
+  if(q.cli && !(''+(q.cli.email||'')).trim()) delete q.cli.email;
   var c=computeAll(JSON.parse(JSON.stringify(q)));
   return canon({doc:q, calc:{imp:c.impC,iva:c.ivaC,tot:c.totC,base:c.baseC,ant:c.antC,
     sched:c.sched.map(function(r){return [r.label,r.date,r.amtC];})}});
@@ -2926,7 +2933,7 @@ function migrate(p){
   n.head.numero=s[0]||'';
   if(/^\d{1,2}$/.test(s[1]||'')&&/^\d{1,2}$/.test(s[2]||'')) n.head.data='2026-'+('0'+s[2]).slice(-2)+'-'+('0'+s[1]).slice(-2);
   n.creator={nome:s[3]||'',cognome:s[4]||'',societa:s[5]||''};
-  n.cli={ragione:s[6]||'',sede:s[7]||'',dest:s[8]||'',piva:s[9]||'',sdi:s[10]||'',referente:s[11]||'',contatti:s[12]||''};
+  n.cli={ragione:s[6]||'',sede:s[7]||'',dest:s[8]||'',piva:s[9]||'',sdi:s[10]||'',referente:s[11]||'',contatti:s[12]||'',email:''};
   n.sw=(p.sw||[]).map(function(r){ var d=(''+(r[2]||'')).match(/\d+/); return {nome:r[0],tipo:r[1],mesi:d?d[0]:'',nomult:true,qty:r[3],price:r[4]}; });
   n.hw=(p.hw||[]).map(function(r){ return {codice:r[0],descr:r[1],qty:r[2],price:r[3]}; });
   if(!n.sw.length) n.sw=[{}]; if(!n.hw.length) n.hw=[{}];
@@ -3048,6 +3055,7 @@ async function sbConnect(){ if(!USER){ toast('Accedi prima'); return; } try{ set
 function randHex(n){ var a=new Uint8Array(n); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2);}).join(''); }
 function randPin(){ var a=new Uint32Array(1), x; do{ crypto.getRandomValues(a); x=a[0]; }while(x>=4294000000); return ('00000'+(x%1000000)).slice(-6); }
 function shareUrl(token){ return location.origin+location.pathname+'?t='+token; }
+function emailValid(s){ return /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]{2,}$/.test((''+(s||'')).trim()); }
 function emailFrom(s){ var m=/[^\s@,;]+@[^\s@,;]+\.[^\s@,;]{2,}/.exec(s||''); return m?m[0]:''; }
 var LAST_SHARE=null;
 async function openShare(afterEmit){
@@ -3081,7 +3089,7 @@ async function shareDownload(){ closeShare(); await exportPDF(); }
 function mailShare(){ var h=mailtoHref(); if(h) location.href=h; }
 function mailtoHref(){
   if(!LAST_SHARE) return '';
-  var to=emailFrom(P.cli.contatti);
+  var to=emailFrom(P.cli.email)||emailFrom(P.cli.contatti);
   var sub='Copia Commissioni '+P.head.numero+' da firmare — Lotus Pecas Italia';
   var body='Gentile '+(P.cli.referente||'Cliente')+',\n\nle inviamo la Copia Commissioni n. '+P.head.numero+' da visionare e firmare online:\n'+LAST_SHARE.url+
     '\n\nPer aprire il documento serve un PIN di 6 cifre che le comunicheremo separatamente.\nIl link è valido fino al '+new Date(LAST_SHARE.expires).toLocaleDateString('it-IT')+'.\n\nCordiali saluti\n'+(P.creator.nome+' '+P.creator.cognome).trim()+'\n'+(P.creator.societa||'');
@@ -3708,7 +3716,7 @@ async function runHealth(manual){
 
 /* ================= ANAGRAFICA CLIENTI ================= */
 var CLI={rows:[],counts:{},loaded:false,editing:null,q:''};
-var CLI_FIELDS=['ragione','piva','sede','dest','sdi','referente','contatti'];
+var CLI_FIELDS=['ragione','piva','sede','dest','sdi','referente','contatti','email'];
 function pivaNorm(v){ return (''+(v||'')).replace(/[^A-Za-z0-9]/g,'').toUpperCase(); }
 function cliFind(ragione,piva){
   var pn=pivaNorm(piva), rn=(''+(ragione||'')).trim().toLowerCase();
@@ -3773,7 +3781,7 @@ async function openCliPicker(){
 }
 function closeCliPicker(){ $('cliPickModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
 function cliMatch(c,q){ if(!q) return true;
-  return [c.ragione,c.piva,c.referente,c.contatti,c.sede].join(' ').toLowerCase().indexOf(q)>=0; }
+  return [c.ragione,c.piva,c.referente,c.contatti,c.email,c.sede].join(' ').toLowerCase().indexOf(q)>=0; }
 function renderCliPicker(){
   var q=($('cpQ').value||'').toLowerCase().trim();
   var rows=CLI.rows.filter(function(c){ return cliMatch(c,q); });
@@ -3781,7 +3789,7 @@ function renderCliPicker(){
   host.innerHTML = rows.length ? rows.map(function(c){
     return '<button type="button" class="pkrow" data-id="'+esc(c.id)+'"><span class="pkn"><b>'+esc(c.ragione)+'</b>'+
       '<small>'+esc([c.piva,c.sede].filter(Boolean).join(' · '))+'</small></span>'+
-      '<span class="pkp cpmeta">'+esc(c.referente||'')+'<small>'+esc(c.contatti||'')+'</small></span></button>';
+      '<span class="pkp cpmeta">'+esc(c.referente||'')+'<small>'+esc([c.contatti,c.email].filter(Boolean).join(' · '))+'</small></span></button>';
   }).join('') : '<p class="note">Nessun cliente trovato.</p>';
   host.onclick=function(ev){ var b=ev.target.closest('.pkrow'); if(!b) return;
     var c=CLI.rows.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
@@ -3830,7 +3838,7 @@ function renderClienti(){
     tr.innerHTML='<td class="c-cli"><b>'+esc(c.ragione)+'</b><small>'+esc(c.sede||'')+'</small></td>'+
       '<td><span class="mono">'+esc(c.piva||'—')+'</span><small>'+esc(c.sdi||'')+'</small></td>'+
       '<td>'+esc(c.referente||'—')+'</td>'+
-      '<td>'+esc(c.contatti||'—')+(c.note?'<small>'+esc(c.note)+'</small>':'')+'</td>'+
+      '<td>'+esc(c.contatti||'—')+'<small>'+esc(c.email||'')+'</small>'+(c.note?'<small>'+esc(c.note)+'</small>':'')+'</td>'+
       '<td class="num"><b>'+n+'</b></td>'+
       '<td class="c-act"><button type="button" class="abtn primary" data-a="new">Nuovo documento</button>'+
         '<button type="button" class="abtn" data-a="edit">Modifica</button></td>';
@@ -3869,6 +3877,7 @@ async function saveCliEdit(){
   });
   if(!rec.ragione){ setText('ceErr','La ragione sociale è obbligatoria.'); return; }
   if(rec.piva && !taxIdValid(rec.piva)){ setText('ceErr','P.IVA / C.F. non valida. Lascia il campo vuoto se non la conosci.'); return; }
+  if(rec.email && !emailValid(rec.email)){ setText('ceErr','Indirizzo email non valido.'); return; }
   var r=await SB.from('clienti').upsert(rec);
   if(r.error){ setText('ceErr',cliErr(r.error.message)); return; }
   closeCliEdit(); await loadClienti(true); renderClienti();
