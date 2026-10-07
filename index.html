@@ -80,6 +80,10 @@
   .fld{display:flex;align-items:baseline;gap:8px;margin:5px 0}
   .fld label{font-size:11px;color:var(--muted);flex:0 0 118px}
   .fld .val{flex:1}
+  .adr{display:flex;gap:6px}
+  .adr .acap{flex:0 0 58px} .adr .acit{flex:1 1 auto;min-width:70px}
+  .adr .aprv{flex:0 0 34px;text-transform:uppercase} .adr .anaz{flex:0 0 72px}
+  .adrline{display:none;font-size:13px;color:var(--ink);letter-spacing:.1px;padding:3px 2px}
   .supplier .fld label{flex-basis:96px}
   .supplier .v{font-size:12px;color:var(--ink)}
   input,select,textarea{font-family:inherit}
@@ -513,6 +517,15 @@
 
   .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;margin-top:10px}
   .fgrid.two{grid-template-columns:1fr 1fr}
+  .fgrid.adrgrid{grid-template-columns:72px 1fr 54px 92px}
+  .fgrid.adrgrid .via{grid-column:1 / -1}
+  .cesec{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--brand);
+    border-top:1px solid var(--line);padding-top:12px}
+  .cesec:first-child{margin-top:0;border-top:0;padding-top:0}
+  .cesec small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px}
+  .cenote{margin-top:8px}
+  .livtag{display:inline-block;margin-top:3px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;
+    background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}
   .ff{display:flex;flex-direction:column;gap:3px;min-width:0}
   .ff > span{font-size:10.5px;color:var(--muted);font-weight:600}
   .box{border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:13.5px;background:#fff;width:100%;color:var(--ink);min-height:40px}
@@ -576,9 +589,14 @@
     .pseg input.sr{display:none}
     .box{border-color:transparent}
     .errmsg{display:none}
+    .in::placeholder,.box::placeholder{color:transparent}
+    .adr input{display:none}
+    .adrline{display:inline;font-size:13.5px}
   }
   @media (max-width:640px){
     .fgrid,.fgrid.two{grid-template-columns:1fr}
+    .fgrid.adrgrid{grid-template-columns:72px 1fr}
+    .fgrid.adrgrid .via{grid-column:1 / -1}
     .summary{grid-template-columns:1fr}
     .sched{min-width:460px}
     .elist li{flex-wrap:wrap}
@@ -1060,7 +1078,7 @@
       <button class="tb solid" type="button" onclick="openCliEdit(null)">+ Nuovo cliente</button>
     </div>
     <div class="ltools">
-      <input class="lin listsearch" type="search" id="cliSearch" placeholder="Cerca ragione sociale, P.IVA, referente" oninput="renderClienti()">
+      <input class="lin listsearch" type="search" id="cliSearch" placeholder="Cerca ragione sociale, P.IVA, città, referente" oninput="renderClienti()">
     </div>
     <div class="tblwrap lcard2">
       <table class="listtbl2">
@@ -1162,13 +1180,17 @@
         </div>
         <div class="cb">
           <div class="fld"><label>Ragione sociale</label><span class="val"><input class="in" id="cliRagione" data-k="cli.ragione" list="cliNomi" autocomplete="off"></span></div>
-          <div class="fld"><label>Sede legale (fatt.)</label><span class="val"><input class="in" data-k="cli.sede"></span></div>
-          <div class="fld"><label>Destinazione merce</label><span class="val"><input class="in" data-k="cli.dest"></span></div>
+          <div class="fld"><label>Sede legale (fatt.)</label><span class="val"><input class="in" data-k="cli.sede" placeholder="Via e numero civico"></span></div>
+          <div class="fld"><label></label><span class="val adr"><input class="in acap" data-k="cli.cap" placeholder="CAP" inputmode="numeric" maxlength="5"><input class="in acit" data-k="cli.citta" placeholder="Città"><input class="in aprv" data-k="cli.prov" placeholder="PR" maxlength="2"><input class="in anaz" data-k="cli.paese" placeholder="Paese"><span class="adrline" id="adrSede"></span></span></div>
+          <div class="fld"><label>Destinazione merce</label><span class="val"><input class="in" data-k="cli.dest" placeholder="Via e numero civico · se diversa dalla sede"></span></div>
+          <div class="fld destadr"><label></label><span class="val adr"><input class="in acap" data-k="cli.destCap" placeholder="CAP" inputmode="numeric" maxlength="5"><input class="in acit" data-k="cli.destCitta" placeholder="Città"><input class="in aprv" data-k="cli.destProv" placeholder="PR" maxlength="2"><input class="in anaz" data-k="cli.destPaese" placeholder="Paese"><span class="adrline" id="adrDest"></span></span></div>
           <div class="fld"><label>P.IVA / C.F.</label><span class="val"><input class="in" id="cliPiva" data-k="cli.piva" list="cliPive" autocomplete="off"></span></div>
-          <div class="fld"><label>Codice SDI / PEC</label><span class="val"><input class="in" data-k="cli.sdi"></span></div>
+          <div class="fld"><label>Codice SDI</label><span class="val"><input class="in" data-k="cli.sdi" placeholder="7 caratteri"></span></div>
+          <div class="fld"><label>PEC</label><span class="val"><input class="in" data-k="cli.pec" inputmode="email" autocomplete="off"></span></div>
           <div class="fld"><label>Referente</label><span class="val"><input class="in" data-k="cli.referente"></span></div>
           <div class="fld"><label>Telefono</label><span class="val"><input class="in" data-k="cli.contatti" inputmode="tel"></span></div>
           <div class="fld"><label>Email</label><span class="val"><input class="in" data-k="cli.email" inputmode="email" autocomplete="off"></span></div>
+          <div class="fld"><label>Amministrazione</label><span class="val"><input class="in" data-k="cli.referente2" placeholder="Secondo referente · opzionale"></span></div>
         </div>
       </div>
     </div>
@@ -1666,15 +1688,57 @@
   <div class="mcard">
     <div class="mhead"><span id="ceTitle">Scheda cliente</span><button class="mx" type="button" onclick="closeCliEdit()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody">
+      <div class="cesec">Anagrafica</div>
       <div class="fgrid two">
         <label class="ff"><span>Ragione sociale *</span><input class="box" id="ceRagione"></label>
         <label class="ff"><span>P.IVA / C.F.</span><input class="box" id="cePiva"></label>
-        <label class="ff"><span>Sede legale</span><input class="box" id="ceSede"></label>
-        <label class="ff"><span>Destinazione merce</span><input class="box" id="ceDest"></label>
-        <label class="ff"><span>Codice SDI / PEC</span><input class="box" id="ceSdi"></label>
+        <label class="ff"><span>Codice SDI</span><input class="box" id="ceSdi" placeholder="7 caratteri"></label>
+        <label class="ff"><span>PEC</span><input class="box" id="cePec" inputmode="email"></label>
+      </div>
+      <div class="cesec">Sede legale</div>
+      <div class="fgrid adrgrid">
+        <label class="ff via"><span>Via e numero civico</span><input class="box" id="ceSede"></label>
+        <label class="ff"><span>CAP</span><input class="box" id="ceCap" inputmode="numeric" maxlength="5"></label>
+        <label class="ff"><span>Città</span><input class="box" id="ceCitta"></label>
+        <label class="ff"><span>Prov.</span><input class="box" id="ceProv" maxlength="2"></label>
+        <label class="ff"><span>Paese</span><input class="box" id="cePaese" placeholder="Italia"></label>
+      </div>
+      <div class="cesec">Destinazione merce <small>se diversa dalla sede</small></div>
+      <div class="fgrid adrgrid">
+        <label class="ff via"><span>Via e numero civico</span><input class="box" id="ceDest"></label>
+        <label class="ff"><span>CAP</span><input class="box" id="ceDestCap" inputmode="numeric" maxlength="5"></label>
+        <label class="ff"><span>Città</span><input class="box" id="ceDestCitta"></label>
+        <label class="ff"><span>Prov.</span><input class="box" id="ceDestProv" maxlength="2"></label>
+        <label class="ff"><span>Paese</span><input class="box" id="ceDestPaese"></label>
+      </div>
+      <div class="cesec">Contatti</div>
+      <div class="fgrid two">
         <label class="ff"><span>Referente</span><input class="box" id="ceReferente"></label>
+        <label class="ff"><span>Amministrazione</span><input class="box" id="ceReferente2"></label>
         <label class="ff"><span>Telefono</span><input class="box" id="ceContatti" inputmode="tel"></label>
         <label class="ff"><span>Email</span><input class="box" id="ceEmail" inputmode="email"></label>
+      </div>
+      <div class="cesec">Condizioni abituali <small>proposte sui nuovi documenti, sempre modificabili</small></div>
+      <div class="fgrid two">
+        <label class="ff"><span>Listino applicato</span><select class="box" id="ceListino"></select></label>
+        <label class="ff"><span>Metodo di incasso</span><select class="box" id="ceMetodo">
+          <option value="">— nessuna preferenza —</option><option value="bonifico">Bonifico</option>
+          <option value="riba">Ri.Ba.</option><option value="sdd">SEPA Direct Debit (SDD)</option></select></label>
+        <label class="ff"><span>Anticipo abituale (%)</span><input class="box" id="ceAntPct" inputmode="numeric" placeholder="es. 30"></label>
+        <label class="ff"><span>Numero di rate</span><input class="box" id="ceRateN" inputmode="numeric" placeholder="es. 3"></label>
+        <label class="ff"><span>Giorni fra le rate</span><input class="box" id="ceRateEvery" inputmode="numeric" placeholder="es. 30"></label>
+      </div>
+      <div class="cesec">Coordinate di addebito <small>valgono sia per Ri.Ba. sia per SDD</small></div>
+      <div class="fgrid two">
+        <label class="ff"><span>Intestatario del conto</span><input class="box" id="ceIntest"></label>
+        <label class="ff"><span>C.F. / P.IVA intestatario</span><input class="box" id="ceCf"></label>
+        <label class="ff"><span>IBAN</span><input class="box mono" id="ceIban" placeholder="IT.."></label>
+        <label class="ff"><span>BIC / SWIFT</span><input class="box mono" id="ceBic" placeholder="opzionale"></label>
+        <label class="ff"><span>Banca d'appoggio</span><input class="box" id="ceBanca"></label>
+      </div>
+      <p class="note cenote">Il mandato SEPA resta da sottoscrivere su ogni documento: il consenso non viene mai precompilato.</p>
+      <div class="cesec">Note</div>
+      <div class="fgrid">
         <label class="ff"><span>Note interne</span><input class="box" id="ceNote" placeholder="non compare nei documenti"></label>
       </div>
       <div class="merr" id="ceErr"></div>
@@ -1741,13 +1805,17 @@ function taxIdValid(v){
 }
 function sdiPecValid(v){ var s=(''+(v||'')).trim();
   return /^[A-Z0-9]{7}$/i.test(s) || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
+function sdiValid(v){ return /^[A-Z0-9]{7}$/i.test((''+(v||'')).trim()); }
+function capValid(v){ return /^\d{5}$/.test((''+(v||'')).trim()); }
+function provValid(v){ return /^[A-Za-z]{2}$/.test((''+(v||'')).trim()); }
 
 function blankPayload(){
   var today=isoToday();
   return { v:2,
     head:{numero:'',data:today,validita:'30'},
     creator:{nome:'',cognome:'',societa:''},
-    cli:{ragione:'',sede:'',dest:'',piva:'',sdi:'',referente:'',contatti:'',email:''},
+    cli:{ragione:'',sede:'',cap:'',citta:'',prov:'',paese:'',dest:'',destCap:'',destCitta:'',destProv:'',destPaese:'',
+         piva:'',sdi:'',pec:'',referente:'',referente2:'',contatti:'',email:''},
     sw:[{},{},{}], hw:[{},{},{}],
     cons:{attivOre:'',tariffaOra:'60',hwGg:'',spese:'incluse',speseAmt:''},
     allegati:[],
@@ -1911,7 +1979,7 @@ function calcCheck(p,c){
 }
 
 /* validazione completa per l'emissione */
-var FORCIBLE=['cli.piva','cli.sdi','pay.riba.iban','pay.riba.bic','pay.sdd.iban','pay.sdd.bic','pay.sdd.cf','pay.bank.bic'];
+var FORCIBLE=['cli.piva','cli.sdi','cli.pec','cli.cap','cli.prov','pay.riba.iban','pay.riba.bic','pay.sdd.iban','pay.sdd.bic','pay.sdd.cf','pay.bank.bic'];
 function validateDoc(p,c){
   var e=[];
   var forced=p.forced||{};
@@ -1929,9 +1997,15 @@ function validateDoc(p,c){
   req('creator.cognome',p.creator.cognome,'Cognome di chi compila','Compilato da');
   req('creator.societa',p.creator.societa,'Società di riferimento','Compilato da');
   req('cli.ragione',p.cli.ragione,'Ragione sociale','Cliente');
-  req('cli.sede',p.cli.sede,'Sede legale','Cliente');
+  req('cli.sede',p.cli.sede,'Sede legale: via e numero civico','Cliente');
+  req('cli.citta',p.cli.citta,'Sede legale: città','Cliente');
+  fmt('cli.cap',p.cli.cap,capValid,'Sede legale: CAP','CAP non valido: cinque cifre','Cliente');
+  fmt('cli.prov',p.cli.prov,provValid,'Sede legale: provincia','Provincia: due lettere (es. MI)','Cliente',true);
   fmt('cli.piva',p.cli.piva,taxIdValid,'P.IVA / C.F.','P.IVA / C.F. non valida','Cliente');
-  fmt('cli.sdi',p.cli.sdi,sdiPecValid,'Codice SDI o PEC','Codice SDI (7 caratteri) o PEC non valida','Cliente');
+  if(!(''+(p.cli.sdi||'')).trim() && !(''+(p.cli.pec||'')).trim())
+    e.push({k:'cli.sdi',msg:'Codice SDI o PEC: serve almeno uno dei due per la fatturazione',sec:'Cliente'});
+  fmt('cli.sdi',p.cli.sdi,sdiValid,'Codice SDI','Codice SDI: 7 caratteri','Cliente',true);
+  fmt('cli.pec',p.cli.pec,emailValid,'PEC','Indirizzo PEC non valido','Cliente',true);
   req('cli.referente',p.cli.referente,'Referente','Cliente');
   if(!(''+(p.cli.contatti||'')).trim() && !(''+(p.cli.email||'')).trim())
     e.push({k:'cli.contatti',msg:'Telefono o email: serve almeno un recapito',sec:'Cliente'});
@@ -1983,6 +2057,9 @@ function validateDoc(p,c){
   var seen={}; return e.filter(function(x){ var id=x.k+'|'+x.msg; if(seen[id]) return false; seen[id]=1; return true; });
 }
 
+/* campi del cliente introdotti dopo che esistevano già documenti firmati:
+   se lasciati vuoti non entrano nell'impronta, così i sigilli restano validi */
+var CLI_ADDED=['email','cap','citta','prov','paese','destCap','destCitta','destProv','destPaese','pec','referente2'];
 /* contenuto canonico per l'hash (senza firme) */
 function canon(o){
   if(Array.isArray(o)) return '['+o.map(canon).join(',')+']';
@@ -1993,7 +2070,7 @@ function contentString(p){
   var q=JSON.parse(JSON.stringify(p)); delete q.sign; delete q.meta;
   /* un campo aggiunto e lasciato vuoto non deve cambiare l'impronta dei documenti
      emessi prima che esistesse: vuoto equivale ad assente */
-  if(q.cli && !(''+(q.cli.email||'')).trim()) delete q.cli.email;
+  if(q.cli) CLI_ADDED.forEach(function(f){ if(!(''+(q.cli[f]||'')).trim()) delete q.cli[f]; });
   var c=computeAll(JSON.parse(JSON.stringify(q)));
   return canon({doc:q, calc:{imp:c.impC,iva:c.ivaC,tot:c.totC,base:c.baseC,ant:c.antC,
     sched:c.sched.map(function(r){return [r.label,r.date,r.amtC];})}});
@@ -2202,6 +2279,8 @@ function refresh(){
   $('attivAmt').innerHTML=eurBoth(Math.round(c.attivC*(1+IVA_RATE)));
   var dp=[]; if(c.attivC) dp.push('Attivazione '+eurC(c.attivC)+' + IVA'); dp.push(P.cons.spese==='addebitate'?'Spese '+eurC(c.speseC)+' + IVA':'Spese incluse');
   setText('pvDeliv', dp.join(' · '));
+  setText('adrSede', cliLoc(P.cli,false));
+  setText('adrDest', cliLoc(P.cli,true));
   renderTotals(c);
   renderForced();
   renderDock(c);
@@ -2291,6 +2370,8 @@ function onDocChange(e){
     refresh(); return;
   }
   var dk=t.getAttribute&&t.getAttribute('data-k');
+  /* una scelta fatta a mano non va mai sovrascritta dalle condizioni abituali */
+  if(dk==='pay.method'||dk==='pay.ant.on'||dk==='pay.n'||dk==='pay.every') PAY_TOCCATO[dk]=true;
   if(dk==='cli.ragione'||dk==='cli.piva'){ collect(); cliAutofill(); }
   if(t.type==='radio'||t.type==='checkbox'||t.tagName==='SELECT'||t.type==='date') onDocInput(e);
   if(t.classList.contains('amt') && !t.hasAttribute('data-rate')){
@@ -2966,7 +3047,7 @@ async function newDoc(){
   P=blankPayload(); if(keep) P.creator=clone(keep);
   if(USER&&USER.user_metadata){ var um=USER.user_metadata; if(!P.creator.nome&&um.nome) P.creator.nome=um.nome; if(!P.creator.cognome&&um.cognome) P.creator.cognome=um.cognome; if(!P.creator.societa&&um.societa) P.creator.societa=um.societa; }
   if(!P.creator.societa && roleOf(USER)==='team') P.creator.societa='Lotus Pecas Italia Srl';
-  DOC={id:null,created:null,status:'bozza',hash:'',hashVer:''}; FAILS={}; REDO_PRE={};
+  DOC={id:null,created:null,status:'bozza',hash:'',hashVer:''}; FAILS={}; REDO_PRE={}; PAY_TOCCATO={}; PICK.liv='cliente';
   renderStructure(); applyLock(); clearAllErr(); showView('editor');
   P.head.numero=await nextNumero(); $('ordN').value=P.head.numero; updateFname();
 }
@@ -3613,7 +3694,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v2.5.0';
+var APP_VERSION='v2.6.0';
 var APP_BUILD='2026-10-07';
 /* Regole di calcolo con cui viene sigillato il documento. Si incrementa
    ogni volta che cambiano struttura o calcoli: i documenti emessi con una
@@ -3716,7 +3797,20 @@ async function runHealth(manual){
 
 /* ================= ANAGRAFICA CLIENTI ================= */
 var CLI={rows:[],counts:{},loaded:false,editing:null,q:''};
-var CLI_FIELDS=['ragione','piva','sede','dest','sdi','referente','contatti','email'];
+/* campi che viaggiano uno a uno fra scheda cliente e documento */
+var CLI_FIELDS=['ragione','piva','sede','cap','citta','prov','paese',
+                'dest','destCap','destCitta','destProv','destPaese',
+                'sdi','pec','referente','referente2','contatti','email'];
+/* condizioni abituali e coordinate di addebito: stanno solo in scheda e
+   vengono riversate nel documento da applyCondizioni() */
+var CLI_PREF=['listino','metodo','antPct','rateN','rateEvery','intest','cf','iban','bic','banca'];
+/* i nomi delle colonne sul database usano l'underscore */
+var CLI_COL={destCap:'dest_cap',destCitta:'dest_citta',destProv:'dest_prov',destPaese:'dest_paese',
+             antPct:'ant_pct',rateN:'rate_n',rateEvery:'rate_every'};
+function cliFromRow(r){ var o={}; for(var k in r) o[k]=r[k];
+  for(var f in CLI_COL) if(r[CLI_COL[f]]!==undefined) o[f]=r[CLI_COL[f]];
+  return o; }
+function cliToRow(c){ var o={}; for(var k in c){ if(CLI_COL[k]) o[CLI_COL[k]]=c[k]; else o[k]=c[k]; } return o; }
 function pivaNorm(v){ return (''+(v||'')).replace(/[^A-Za-z0-9]/g,'').toUpperCase(); }
 function cliFind(ragione,piva){
   var pn=pivaNorm(piva), rn=(''+(ragione||'')).trim().toLowerCase();
@@ -3729,7 +3823,7 @@ async function loadClienti(force){
   if(CLI.loaded && !force) return true;
   var r=await SB.from('clienti').select('*');
   if(r.error){ console.warn('clienti',r.error); return false; }
-  CLI.rows=(r.data||[]).filter(function(c){ return c.active!==false; })
+  CLI.rows=(r.data||[]).map(cliFromRow).filter(function(c){ return c.active!==false; })
     .sort(function(a,b){ return (''+a.ragione).localeCompare(''+b.ragione,'it'); });
   CLI.loaded=true;
   try{ var n=await SB.rpc('clienti_conteggi'); if(!n.error&&n.data) CLI.counts=n.data; }catch(e){}
@@ -3757,7 +3851,41 @@ function applyCliente(c,opts){
     var fld=el.closest('.fld'); if(fld){ fld.classList.remove('cliflash'); void fld.offsetWidth; fld.classList.add('cliflash'); }
     if(el.classList.contains('err')) clearErr(el);
   });
+  n+=applyCondizioni(c,over);
   if(n){ collect(); refresh(); }
+  return n;
+}
+/* condizioni abituali: proposte sul documento, mai imposte.
+   Il consenso al mandato SEPA non viene mai precompilato: è l'autorizzazione
+   che il cliente sottoscrive su questo documento, non un dato di anagrafica. */
+var PAY_TOCCATO={};
+function applyCondizioni(c,over){
+  if(!c || isLocked() || DOC.status!=='bozza') return 0;
+  var n=0;
+  function put(k,val){
+    var el=document.querySelector('[data-k="'+k+'"]'); if(!el||el.disabled) return;
+    val=(''+(val||'')).trim(); if(!val) return;
+    var cur=(el.value||'').trim();
+    if(cur && !over) return;
+    if(cur===val) return;
+    el.value=val; n++; if(el.classList.contains('err')) clearErr(el);
+  }
+  if(c.metodo && !PAY_TOCCATO['pay.method']){
+    var r=document.querySelector('[data-k="pay.method"][value="'+c.metodo+'"]');
+    if(r && !r.disabled && !r.checked){ r.checked=true; n++; }
+  }
+  if(c.antPct && !PAY_TOCCATO['pay.ant.on'] && !P.pay.ant.on){
+    var chk=document.querySelector('[data-k="pay.ant.on"]');
+    if(chk && !chk.disabled && !chk.checked){ chk.checked=true; n++; }
+    put('pay.ant.pct',c.antPct);
+  }
+  if(!PAY_TOCCATO['pay.n']) put('pay.n',c.rateN);
+  if(!PAY_TOCCATO['pay.every']) put('pay.every',c.rateEvery);
+  ['riba','sdd'].forEach(function(b){
+    put('pay.'+b+'.intest',c.intest); put('pay.'+b+'.iban',c.iban); put('pay.'+b+'.bic',c.bic);
+  });
+  put('pay.riba.banca',c.banca); put('pay.sdd.cf',c.cf||c.piva);
+  if(c.listino) PICK.liv=c.listino;
   return n;
 }
 /* riconoscimento mentre si digita ragione sociale o P.IVA */
@@ -3781,14 +3909,37 @@ async function openCliPicker(){
 }
 function closeCliPicker(){ $('cliPickModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
 function cliMatch(c,q){ if(!q) return true;
-  return [c.ragione,c.piva,c.referente,c.contatti,c.email,c.sede].join(' ').toLowerCase().indexOf(q)>=0; }
+  return [c.ragione,c.piva,c.referente,c.referente2,c.contatti,c.email,c.pec,
+          c.sede,c.cap,c.citta,c.prov].join(' ').toLowerCase().indexOf(q)>=0; }
+/* CAP, città, provincia e paese su una riga: in stampa sostituisce i campi */
+function cliLoc(c,dest){
+  if(!c) return '';
+  var cap=dest?c.destCap:c.cap, cit=dest?c.destCitta:c.citta,
+      prv=dest?c.destProv:c.prov, pae=dest?c.destPaese:c.paese;
+  var s=[cap,cit].filter(Boolean).join(' ');
+  if(prv) s=(s?s+' ':'')+'('+(''+prv).toUpperCase()+')';
+  if(pae) s=(s?s+' · ':'')+pae;
+  return s;
+}
+/* indirizzo su una riga, per elenchi e messaggi */
+function cliAddr(c,dest){
+  if(!c) return '';
+  var via = dest ? c.dest : c.sede,
+      cap = dest ? c.destCap : c.cap,
+      cit = dest ? c.destCitta : c.citta,
+      prv = dest ? c.destProv : c.prov,
+      pae = dest ? c.destPaese : c.paese;
+  var loc=[cap,cit].filter(Boolean).join(' ');
+  if(prv) loc=(loc?loc+' ':'')+'('+(''+prv).toUpperCase()+')';
+  return [via,loc,pae].filter(Boolean).join(' · ');
+}
 function renderCliPicker(){
   var q=($('cpQ').value||'').toLowerCase().trim();
   var rows=CLI.rows.filter(function(c){ return cliMatch(c,q); });
   var host=$('cpList');
   host.innerHTML = rows.length ? rows.map(function(c){
     return '<button type="button" class="pkrow" data-id="'+esc(c.id)+'"><span class="pkn"><b>'+esc(c.ragione)+'</b>'+
-      '<small>'+esc([c.piva,c.sede].filter(Boolean).join(' · '))+'</small></span>'+
+      '<small>'+esc([c.piva,cliAddr(c)].filter(Boolean).join(' · '))+'</small></span>'+
       '<span class="pkp cpmeta">'+esc(c.referente||'')+'<small>'+esc([c.contatti,c.email].filter(Boolean).join(' · '))+'</small></span></button>';
   }).join('') : '<p class="note">Nessun cliente trovato.</p>';
   host.onclick=function(ev){ var b=ev.target.closest('.pkrow'); if(!b) return;
@@ -3797,6 +3948,19 @@ function renderCliPicker(){
     toast(n?('Compilati i dati di '+c.ragione):'Dati già presenti'); };
 }
 /* ---- salvataggio dalla compilazione ---- */
+/* legge dal documento aperto le condizioni che vale la pena ricordare */
+function condizioniDaDoc(){
+  var pay=P.pay||{}, b=(pay.method==='riba')?(pay.riba||{}):(pay.sdd||{});
+  return {
+    listino: PICK.liv && PICK.liv!=='cliente' ? PICK.liv : '',
+    metodo: pay.method||'',
+    antPct: (pay.ant&&pay.ant.on)?(pay.ant.pct||''):'',
+    rateN: (pay.plan==='rateale'&&pay.mode!=='noleggio')?(pay.n||''):'',
+    rateEvery: (pay.plan==='rateale'&&pay.mode!=='noleggio')?(pay.every||''):'',
+    intest: b.intest||'', cf: (pay.sdd&&pay.sdd.cf)||'',
+    iban: b.iban||'', bic: b.bic||'', banca: (pay.riba&&pay.riba.banca)||''
+  };
+}
 async function saveCliFromDoc(){
   if(isLocked()) return;
   collect();
@@ -3807,8 +3971,12 @@ async function saveCliFromDoc(){
   var esistente=cliFind(rag,P.cli.piva);
   var rec={ id:(esistente&&esistente.id)||('cli_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)) };
   CLI_FIELDS.forEach(function(f){ rec[f]=(P.cli[f]||'').trim(); });
+  /* condizioni e coordinate prese dal documento in compilazione;
+     quelle già in scheda restano se qui non c'è nulla di meglio */
+  var pref=condizioniDaDoc(), old=esistente||{};
+  CLI_PREF.forEach(function(f){ rec[f]=(pref[f]||old[f]||'').trim(); });
   rec.note=(esistente&&esistente.note)||''; rec.active=true;
-  var r=await SB.from('clienti').upsert(rec);
+  var r=await SB.from('clienti').upsert(cliToRow(rec));
   if(r.error){ toast(cliErr(r.error.message)); return; }
   await loadClienti(true);
   CLI_LAST=rec.id;
@@ -3835,10 +4003,14 @@ function renderClienti(){
   rows.forEach(function(c){
     var n=CLI.counts[(c.ragione||'').trim().toLowerCase()]||0;
     var tr=document.createElement('tr'); tr.className='lrow'; tr.tabIndex=0;
-    tr.innerHTML='<td class="c-cli"><b>'+esc(c.ragione)+'</b><small>'+esc(c.sede||'')+'</small></td>'+
-      '<td><span class="mono">'+esc(c.piva||'—')+'</span><small>'+esc(c.sdi||'')+'</small></td>'+
-      '<td>'+esc(c.referente||'—')+'</td>'+
-      '<td>'+esc(c.contatti||'—')+'<small>'+esc(c.email||'')+'</small>'+(c.note?'<small>'+esc(c.note)+'</small>':'')+'</td>'+
+    var liv=c.listino?(LIV.filter(function(x){return x.k===c.listino;})[0]||{}).t:'';
+    var met={bonifico:'Bonifico',riba:'Ri.Ba.',sdd:'SDD'}[c.metodo]||'';
+    tr.innerHTML='<td class="c-cli"><b>'+esc(c.ragione)+'</b><small>'+esc(cliAddr(c))+'</small>'+
+        (liv?'<span class="livtag">'+esc(liv)+'</span>':'')+'</td>'+
+      '<td><span class="mono">'+esc(c.piva||'—')+'</span><small>'+esc(c.sdi||c.pec||'')+'</small></td>'+
+      '<td>'+esc(c.referente||'—')+(c.referente2?'<small>'+esc(c.referente2)+'</small>':'')+'</td>'+
+      '<td>'+esc(c.contatti||'—')+'<small>'+esc(c.email||'')+'</small>'+
+        (met?'<small>Incasso: '+esc(met)+'</small>':'')+(c.note?'<small>'+esc(c.note)+'</small>':'')+'</td>'+
       '<td class="num"><b>'+n+'</b></td>'+
       '<td class="c-act"><button type="button" class="abtn primary" data-a="new">Nuovo documento</button>'+
         '<button type="button" class="abtn" data-a="edit">Modifica</button></td>';
@@ -3860,10 +4032,13 @@ async function docDaCliente(c){
 function openCliEdit(c){
   CLI.editing=c||null;
   setText('ceTitle', c?'Scheda cliente':'Nuovo cliente');
-  CLI_FIELDS.concat(['note']).forEach(function(f){
+  var liv=$('ceListino');
+  if(liv) liv.innerHTML='<option value="">— nessuno assegnato —</option>'+
+    LIV.map(function(x){ return '<option value="'+x.k+'">'+esc(x.t)+'</option>'; }).join('');
+  CLI_FIELDS.concat(CLI_PREF,['note']).forEach(function(f){
     var el=$('ce'+f.charAt(0).toUpperCase()+f.slice(1)); if(el) el.value=c?(c[f]||''):'';
   });
-  setText('ceErr',''); 
+  setText('ceErr','');
   setText('ceMeta', c&&c.updated_at ? ('Ultima modifica '+new Date(c.updated_at).toLocaleString('it-IT')+(c.updated_email?' · '+c.updated_email:'')+(c.created_email?' · creata da '+c.created_email:'')) : '');
   $('ceDel').classList.toggle('hide',!c);
   $('cliEditModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
@@ -3872,13 +4047,22 @@ function openCliEdit(c){
 function closeCliEdit(){ $('cliEditModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); CLI.editing=null; }
 async function saveCliEdit(){
   var rec={ id:(CLI.editing&&CLI.editing.id)||('cli_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)), active:true };
-  CLI_FIELDS.concat(['note']).forEach(function(f){
+  CLI_FIELDS.concat(CLI_PREF,['note']).forEach(function(f){
     var el=$('ce'+f.charAt(0).toUpperCase()+f.slice(1)); rec[f]=el?(el.value||'').trim():'';
   });
+  rec.prov=rec.prov.toUpperCase(); rec.destProv=rec.destProv.toUpperCase();
   if(!rec.ragione){ setText('ceErr','La ragione sociale è obbligatoria.'); return; }
   if(rec.piva && !taxIdValid(rec.piva)){ setText('ceErr','P.IVA / C.F. non valida. Lascia il campo vuoto se non la conosci.'); return; }
   if(rec.email && !emailValid(rec.email)){ setText('ceErr','Indirizzo email non valido.'); return; }
-  var r=await SB.from('clienti').upsert(rec);
+  if(rec.pec && !emailValid(rec.pec)){ setText('ceErr','Indirizzo PEC non valido.'); return; }
+  if(rec.sdi && !sdiValid(rec.sdi)){ setText('ceErr','Codice SDI: sono 7 caratteri. Se non lo conosci lascia il campo vuoto e usa la PEC.'); return; }
+  var capKo=[['cap','Sede legale'],['destCap','Destinazione merce']].filter(function(p){ return rec[p[0]] && !capValid(rec[p[0]]); })[0];
+  if(capKo){ setText('ceErr',capKo[1]+': il CAP deve avere cinque cifre.'); return; }
+  var prKo=[['prov','Sede legale'],['destProv','Destinazione merce']].filter(function(p){ return rec[p[0]] && !provValid(rec[p[0]]); })[0];
+  if(prKo){ setText('ceErr',prKo[1]+': la provincia è di due lettere (es. MI).'); return; }
+  if(rec.iban && !ibanValid(rec.iban)){ setText('ceErr','IBAN non valido: controlla le cifre di controllo.'); return; }
+  if(rec.bic && !bicValid(rec.bic)){ setText('ceErr','BIC / SWIFT non valido: 8 o 11 caratteri.'); return; }
+  var r=await SB.from('clienti').upsert(cliToRow(rec));
   if(r.error){ setText('ceErr',cliErr(r.error.message)); return; }
   closeCliEdit(); await loadClienti(true); renderClienti();
   toast('Scheda salvata');
