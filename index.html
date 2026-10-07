@@ -519,13 +519,20 @@
   .fgrid.two{grid-template-columns:1fr 1fr}
   .fgrid.adrgrid{grid-template-columns:72px 1fr 54px 92px}
   .fgrid.adrgrid .via{grid-column:1 / -1}
-  .cesec{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--brand);
+  .cesec{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--teal-deep);
     border-top:1px solid var(--line);padding-top:12px}
   .cesec:first-child{margin-top:0;border-top:0;padding-top:0}
   .cesec small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px}
   .cenote{margin-top:8px}
+  .tipopick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .tipopick label{display:block;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;
+    background:var(--paper);transition:border-color .12s,background .12s}
+  .tipopick label.on{border-color:var(--teal-deep);background:color-mix(in srgb,var(--teal-deep) 7%,transparent)}
+  .tipopick label b{display:block;font-size:12.5px;color:var(--ink)}
+  .tipopick label small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .tipopick input{position:absolute;opacity:0;pointer-events:none}
   .livtag{display:inline-block;margin-top:3px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;
-    background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}
+    background:color-mix(in srgb,var(--teal-deep) 12%,transparent);color:var(--teal-deep)}
   .ff{display:flex;flex-direction:column;gap:3px;min-width:0}
   .ff > span{font-size:10.5px;color:var(--muted);font-weight:600}
   .box{border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:13.5px;background:#fff;width:100%;color:var(--ink);min-height:40px}
@@ -678,6 +685,14 @@
   .ltools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ftab span{display:inline-block;min-width:20px;margin-left:5px;font-size:11px;background:rgba(14,95,93,.1);border-radius:10px;padding:1px 6px;text-align:center}
   .ftab.active span{background:var(--teal-deep);color:#fff}
+  .segtabs{display:inline-flex;background:#EAF1F0;border-radius:10px;padding:3px;gap:3px}
+  .segtabs button{border:0;background:transparent;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;
+    color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .segtabs button.on{background:#fff;color:var(--teal-deep);box-shadow:0 1px 2px rgba(0,0,0,.07)}
+  .cpsegs{margin-bottom:10px;width:100%}
+  .cpsegs button{flex:1;justify-content:center}
+  .segn{display:inline-block;font-size:11px;font-weight:700;background:rgba(14,95,93,.1);border-radius:10px;padding:1px 7px;min-width:20px;text-align:center}
+  .segtabs button.on .segn{background:var(--teal-deep);color:#fff}
   .lcard2{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto}
   .listtbl2{width:100%;border-collapse:collapse;font-size:13.5px}
   .listtbl2 thead th{background:#fff;color:var(--muted);font-size:11.5px;text-transform:none;letter-spacing:0;font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);text-align:left}
@@ -1075,9 +1090,13 @@
         <h1 class="ltitle2">Anagrafica clienti</h1>
         <div class="note" id="cliSub">Schede riutilizzabili per compilare i documenti</div>
       </div>
-      <button class="tb solid" type="button" onclick="openCliEdit(null)">+ Nuovo cliente</button>
+      <button class="tb solid" type="button" onclick="openCliEdit(null)">+ Nuova scheda</button>
     </div>
     <div class="ltools">
+      <div class="segtabs" id="cliTabs" role="tablist">
+        <button type="button" class="on" role="tab" data-t="finale" onclick="cliTab('finale')">Clienti finali <span class="segn" id="cntFinali">0</span></button>
+        <button type="button" role="tab" data-t="partner" onclick="cliTab('partner')">Partner <span class="segn" id="cntPartner">0</span></button>
+      </div>
       <input class="lin listsearch" type="search" id="cliSearch" placeholder="Cerca ragione sociale, P.IVA, città, referente" oninput="renderClienti()">
     </div>
     <div class="tblwrap lcard2">
@@ -1677,6 +1696,10 @@
   <div class="mcard wide">
     <div class="mhead"><span id="cpTitle">Scegli dall'anagrafica</span><button class="mx" type="button" onclick="closeCliPicker()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody">
+      <div class="segtabs cpsegs" id="cpTabs" role="tablist">
+        <button type="button" class="on" role="tab" data-t="finale" onclick="cpTab('finale')">Clienti finali</button>
+        <button type="button" role="tab" data-t="partner" onclick="cpTab('partner')">Partner</button>
+      </div>
       <input id="cpQ" class="min" type="search" placeholder="Cerca ragione sociale, P.IVA o referente" oninput="renderCliPicker()">
       <div id="cpList" class="pklist"></div>
     </div>
@@ -1689,6 +1712,12 @@
     <div class="mhead"><span id="ceTitle">Scheda cliente</span><button class="mx" type="button" onclick="closeCliEdit()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody">
       <div class="cesec">Anagrafica</div>
+      <div class="tipopick" id="ceTipo" role="radiogroup" aria-label="Tipo di scheda">
+        <label class="on"><input type="radio" name="cetipo" value="finale" checked onchange="cliTipoChanged()">
+          <b>Cliente finale</b><small>Acquista per sé · listino Cliente finale</small></label>
+        <label><input type="radio" name="cetipo" value="partner" onchange="cliTipoChanged()">
+          <b>Partner</b><small>Rivende i nostri prodotti · listino Standard, Pro o Premium</small></label>
+      </div>
       <div class="fgrid two">
         <label class="ff"><span>Ragione sociale *</span><input class="box" id="ceRagione"></label>
         <label class="ff"><span>P.IVA / C.F.</span><input class="box" id="cePiva"></label>
@@ -3694,7 +3723,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v2.6.0';
+var APP_VERSION='v2.7.0';
 var APP_BUILD='2026-10-07';
 /* Regole di calcolo con cui viene sigillato il documento. Si incrementa
    ogni volta che cambiano struttura o calcoli: i documenti emessi con una
@@ -3796,14 +3825,14 @@ async function runHealth(manual){
 }
 
 /* ================= ANAGRAFICA CLIENTI ================= */
-var CLI={rows:[],counts:{},loaded:false,editing:null,q:''};
+var CLI={rows:[],counts:{},loaded:false,editing:null,q:'',tab:'finale',ptab:'finale'};
 /* campi che viaggiano uno a uno fra scheda cliente e documento */
 var CLI_FIELDS=['ragione','piva','sede','cap','citta','prov','paese',
                 'dest','destCap','destCitta','destProv','destPaese',
                 'sdi','pec','referente','referente2','contatti','email'];
 /* condizioni abituali e coordinate di addebito: stanno solo in scheda e
    vengono riversate nel documento da applyCondizioni() */
-var CLI_PREF=['listino','metodo','antPct','rateN','rateEvery','intest','cf','iban','bic','banca'];
+var CLI_PREF=['tipo','listino','metodo','antPct','rateN','rateEvery','intest','cf','iban','bic','banca'];
 /* i nomi delle colonne sul database usano l'underscore */
 var CLI_COL={destCap:'dest_cap',destCitta:'dest_citta',destProv:'dest_prov',destPaese:'dest_paese',
              antPct:'ant_pct',rateN:'rate_n',rateEvery:'rate_every'};
@@ -3904,7 +3933,9 @@ async function openCliPicker(){
   if(isLocked()) return;
   if(!(await loadClienti())){ toast('Anagrafica non disponibile: serve la connessione'); return; }
   if(!CLI.rows.length){ toast('Anagrafica vuota: salva il primo cliente con "Salva cliente"'); return; }
-  $('cpQ').value=''; renderCliPicker();
+  /* se il documento usa un listino partner, parte dalla scheda Partner */
+  CLI.ptab = (PICK.liv && PICK.liv!=='cliente') ? 'partner' : 'finale';
+  $('cpQ').value=''; cpTab(CLI.ptab||'finale');
   $('cliPickModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
 }
 function closeCliPicker(){ $('cliPickModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
@@ -3933,15 +3964,21 @@ function cliAddr(c,dest){
   if(prv) loc=(loc?loc+' ':'')+'('+(''+prv).toUpperCase()+')';
   return [via,loc,pae].filter(Boolean).join(' · ');
 }
+function cpTab(t){
+  CLI.ptab=t;
+  var bs=document.querySelectorAll('#cpTabs button');
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-t')===t);
+  renderCliPicker();
+}
 function renderCliPicker(){
   var q=($('cpQ').value||'').toLowerCase().trim();
-  var rows=CLI.rows.filter(function(c){ return cliMatch(c,q); });
+  var rows=CLI.rows.filter(function(c){ return cliTipoOf(c)===(CLI.ptab||'finale') && cliMatch(c,q); });
   var host=$('cpList');
   host.innerHTML = rows.length ? rows.map(function(c){
     return '<button type="button" class="pkrow" data-id="'+esc(c.id)+'"><span class="pkn"><b>'+esc(c.ragione)+'</b>'+
       '<small>'+esc([c.piva,cliAddr(c)].filter(Boolean).join(' · '))+'</small></span>'+
       '<span class="pkp cpmeta">'+esc(c.referente||'')+'<small>'+esc([c.contatti,c.email].filter(Boolean).join(' · '))+'</small></span></button>';
-  }).join('') : '<p class="note">Nessun cliente trovato.</p>';
+  }).join('') : '<p class="note">'+((CLI.ptab||'finale')==='partner'?'Nessun partner in anagrafica.':'Nessun cliente finale trovato.')+'</p>';
   host.onclick=function(ev){ var b=ev.target.closest('.pkrow'); if(!b) return;
     var c=CLI.rows.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
     closeCliPicker(); CLI_LAST=c?c.id:''; var n=applyCliente(c,{overwrite:true});
@@ -3974,7 +4011,11 @@ async function saveCliFromDoc(){
   /* condizioni e coordinate prese dal documento in compilazione;
      quelle già in scheda restano se qui non c'è nulla di meglio */
   var pref=condizioniDaDoc(), old=esistente||{};
-  CLI_PREF.forEach(function(f){ rec[f]=(pref[f]||old[f]||'').trim(); });
+  CLI_PREF.forEach(function(f){ if(f!=='tipo') rec[f]=(pref[f]||old[f]||'').trim(); });
+  /* il tipo di una scheda esistente non si cambia di nascosto da un documento;
+     per una nuova, un listino partner significa che è un partner */
+  rec.tipo = old.tipo || (['standard','pro','premium'].indexOf(rec.listino)>=0 ? 'partner' : 'finale');
+  if(!tipoListinoOk(rec.tipo,rec.listino)) rec.listino = old.listino||'';
   rec.note=(esistente&&esistente.note)||''; rec.active=true;
   var r=await SB.from('clienti').upsert(cliToRow(rec));
   if(r.error){ toast(cliErr(r.error.message)); return; }
@@ -3982,9 +4023,17 @@ async function saveCliFromDoc(){
   CLI_LAST=rec.id;
   toast(esistente?('Scheda di '+rec.ragione+' aggiornata'):('Cliente '+rec.ragione+' salvato in anagrafica'));
 }
+function tipoListinoOk(tipo,liv){
+  liv=(liv||'');
+  return tipo==='partner' ? ['','standard','pro','premium'].indexOf(liv)>=0
+                          : ['','cliente'].indexOf(liv)>=0;
+}
 function cliErr(m){
   m=''+(m||'');
   if(/clienti_piva_idx|duplicate key/i.test(m)) return 'Esiste già una scheda con questa P.IVA';
+  if(/clienti_tipo_listino_ck/i.test(m)) return 'Tipo e livello di listino non sono compatibili: un cliente finale sta sul listino Cliente finale, un partner su Standard, Pro o Premium';
+  if(/clienti_tipo_ck/i.test(m)) return 'Tipo di scheda non previsto';
+  if(/clienti_listino_ck|clienti_metodo_ck/i.test(m)) return 'Valore non previsto per listino o metodo di incasso';
   if(/row-level security|permission|not authorized/i.test(m)) return 'Questa scheda può essere modificata solo da chi l\'ha creata o dal team';
   return 'Non salvato: '+m;
 }
@@ -3994,16 +4043,28 @@ async function openClienti(){
   $('cliBody').innerHTML='<tr><td colspan="6" class="note">Caricamento…</td></tr>';
   await loadClienti(true); renderClienti();
 }
+function cliTipoOf(c){ return (c&&c.tipo==='partner')?'partner':'finale'; }
+function cliTab(t){
+  CLI.tab=t;
+  var bs=document.querySelectorAll('#cliTabs button');
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-t')===t);
+  renderClienti();
+}
 function renderClienti(){
   var body=$('cliBody'); if(!body) return;
   var q=(($('cliSearch')||{}).value||'').toLowerCase().trim();
-  var rows=CLI.rows.filter(function(c){ return cliMatch(c,q); });
-  setText('cliSub', CLI.rows.length+' schede · riutilizzabili per compilare i documenti');
+  var nF=CLI.rows.filter(function(c){ return cliTipoOf(c)==='finale'; }).length;
+  setText('cntFinali', nF); setText('cntPartner', CLI.rows.length-nF);
+  var rows=CLI.rows.filter(function(c){ return cliTipoOf(c)===CLI.tab && cliMatch(c,q); });
+  var nP=CLI.rows.length-nF;
+  setText('cliSub', CLI.rows.length+(CLI.rows.length===1?' scheda · ':' schede · ')+
+    nF+(nF===1?' cliente finale':' clienti finali')+', '+nP+(nP===1?' partner':' partner'));
   body.innerHTML='';
   rows.forEach(function(c){
     var n=CLI.counts[(c.ragione||'').trim().toLowerCase()]||0;
     var tr=document.createElement('tr'); tr.className='lrow'; tr.tabIndex=0;
     var liv=c.listino?(LIV.filter(function(x){return x.k===c.listino;})[0]||{}).t:'';
+    if(!liv && cliTipoOf(c)==='partner') liv='Partner · livello da assegnare';
     var met={bonifico:'Bonifico',riba:'Ri.Ba.',sdd:'SDD'}[c.metodo]||'';
     tr.innerHTML='<td class="c-cli"><b>'+esc(c.ragione)+'</b><small>'+esc(cliAddr(c))+'</small>'+
         (liv?'<span class="livtag">'+esc(liv)+'</span>':'')+'</td>'+
@@ -4021,7 +4082,9 @@ function renderClienti(){
     body.appendChild(tr);
   });
   var e=$('cliEmpty'); if(e){ e.classList.toggle('hide',rows.length>0);
-    e.textContent = q?'Nessun cliente corrisponde alla ricerca.':'Nessun cliente in anagrafica. Creane uno, oppure salvalo mentre compili un documento.'; }
+    e.textContent = q ? 'Nessuna scheda corrisponde alla ricerca.'
+      : (CLI.tab==='partner' ? 'Nessun partner in anagrafica. Creane uno con "+ Nuova scheda".'
+                             : 'Nessun cliente finale in anagrafica. Creane uno, oppure salvalo mentre compili un documento.'); }
 }
 async function docDaCliente(c){
   await newDoc(); await new Promise(function(r){ setTimeout(r,60); });
@@ -4031,25 +4094,53 @@ async function docDaCliente(c){
 /* ---- scheda ---- */
 function openCliEdit(c){
   CLI.editing=c||null;
-  setText('ceTitle', c?'Scheda cliente':'Nuovo cliente');
-  var liv=$('ceListino');
-  if(liv) liv.innerHTML='<option value="">— nessuno assegnato —</option>'+
-    LIV.map(function(x){ return '<option value="'+x.k+'">'+esc(x.t)+'</option>'; }).join('');
+  setText('ceTitle', c ? ((c.tipo==='partner'?'Partner':'Cliente finale')+' · scheda') : 'Nuova scheda');
+  var tipo=(c&&c.tipo)||(CLI.tab==='partner'?'partner':'finale');
+  cliSetTipo(tipo);
   CLI_FIELDS.concat(CLI_PREF,['note']).forEach(function(f){
+    if(f==='tipo') return;
     var el=$('ce'+f.charAt(0).toUpperCase()+f.slice(1)); if(el) el.value=c?(c[f]||''):'';
   });
+  fillListinoOptions(tipo, c?(c.listino||''):'');
   setText('ceErr','');
   setText('ceMeta', c&&c.updated_at ? ('Ultima modifica '+new Date(c.updated_at).toLocaleString('it-IT')+(c.updated_email?' · '+c.updated_email:'')+(c.created_email?' · creata da '+c.created_email:'')) : '');
   $('ceDel').classList.toggle('hide',!c);
   $('cliEditModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
   setTimeout(function(){ var r=$('ceRagione'); if(r) r.focus(); },60);
 }
+/* il tipo decide quali livelli di listino sono ammessi: un cliente finale
+   non può stare su un listino partner, e viceversa */
+function cliTipo(){ var r=document.querySelector('#ceTipo input:checked'); return r?r.value:'finale'; }
+function cliSetTipo(t){
+  var rs=document.querySelectorAll('#ceTipo input');
+  for(var i=0;i<rs.length;i++){ rs[i].checked=(rs[i].value===t); rs[i].closest('label').classList.toggle('on',rs[i].checked); }
+}
+function fillListinoOptions(tipo,sel){
+  var el=$('ceListino'); if(!el) return;
+  var amm=LIV.filter(function(x){ return tipo==='partner' ? x.k!=='cliente' : x.k==='cliente'; });
+  el.innerHTML='<option value="">— nessuno assegnato —</option>'+
+    amm.map(function(x){ return '<option value="'+x.k+'">'+esc(x.t)+'</option>'; }).join('');
+  el.value = amm.filter(function(x){return x.k===sel;}).length ? sel : '';
+}
+function cliTipoChanged(){
+  var t=cliTipo(); cliSetTipo(t);
+  fillListinoOptions(t, t==='finale' ? 'cliente' : ($('ceListino')?$('ceListino').value:''));
+  setText('ceErr','');
+}
 function closeCliEdit(){ $('cliEditModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); CLI.editing=null; }
 async function saveCliEdit(){
   var rec={ id:(CLI.editing&&CLI.editing.id)||('cli_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)), active:true };
   CLI_FIELDS.concat(CLI_PREF,['note']).forEach(function(f){
+    if(f==='tipo') return;
     var el=$('ce'+f.charAt(0).toUpperCase()+f.slice(1)); rec[f]=el?(el.value||'').trim():'';
   });
+  rec.tipo=cliTipo();
+  if(!tipoListinoOk(rec.tipo,rec.listino)){
+    setText('ceErr', rec.tipo==='finale'
+      ? 'Un cliente finale non può avere un listino partner. Cambia il tipo in Partner oppure togli il livello.'
+      : 'Un partner non può stare sul listino Cliente finale. Scegli Standard, Pro o Premium.');
+    return;
+  }
   rec.prov=rec.prov.toUpperCase(); rec.destProv=rec.destProv.toUpperCase();
   if(!rec.ragione){ setText('ceErr','La ragione sociale è obbligatoria.'); return; }
   if(rec.piva && !taxIdValid(rec.piva)){ setText('ceErr','P.IVA / C.F. non valida. Lascia il campo vuoto se non la conosci.'); return; }
