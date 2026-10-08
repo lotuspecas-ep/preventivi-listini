@@ -80,9 +80,10 @@
   .fld{display:flex;align-items:baseline;gap:8px;margin:5px 0}
   .fld label{font-size:11px;color:var(--muted);flex:0 0 118px}
   .fld .val{flex:1}
-  .adr{display:flex;gap:6px}
-  .adr .acap{flex:0 0 58px} .adr .acit{flex:1 1 auto;min-width:70px}
-  .adr .aprv{flex:0 0 34px;text-transform:uppercase} .adr .anaz{flex:0 0 72px}
+  .adr{display:flex;gap:6px;min-width:0}
+  .adr input{min-width:0}
+  .adr .acap{flex:0 0 54px} .adr .acit{flex:1 1 60px}
+  .adr .aprv{flex:0 0 32px;text-transform:uppercase} .adr .anaz{flex:0 1 70px}
   .sigmeta .fesbadge.alt{background:#F6EFDF;color:#7A5B18;border-color:#C9A64E}
   .adrline{display:none;font-size:13px;color:var(--ink);letter-spacing:.1px;padding:3px 2px}
   .supplier .fld label{flex-basis:96px}
@@ -232,6 +233,10 @@
   @media print{ .redo,.sigbtn{display:none !important} .sigempty{display:none !important}
     .modal{display:none !important} }
   #doc.exporting .redo,#doc.exporting .sigbtn,#doc.exporting .sigempty{display:none !important}
+  /* nel PDF l'indirizzo va su una riga sola, come nella stampa: i campi
+     affiancati, una volta congelati, andrebbero a capo a metà parola */
+  #doc.exporting .adr input,#doc.exporting .adr .frz{display:none !important}
+  #doc.exporting .adrline{display:inline}
 
 
   .bankblock{margin-top:12px;border:1px solid var(--line);border-left:3px solid var(--teal);
@@ -2931,16 +2936,94 @@ async function exportPDF(){
   var doc=$('doc');
   if(!(window.html2canvas && window.jspdf)){ alert('Libreria non disponibile: uso la stampa di sistema (Salva come PDF).'); window.print(); return; }
   var swaps=freezeControls(doc); doc.classList.add('exporting');
-  var prevW=doc.style.width; doc.style.width='800px';
+  var prevW=doc.style.width;
+  toast('Preparazione del PDF…');
   try{
-    var canvas=await html2canvas(doc,{scale:2,backgroundColor:'#ffffff',useCORS:true,windowWidth:820,width:800});
-    var img=canvas.toDataURL('image/jpeg',0.95);
-    var pdf=new window.jspdf.jsPDF('p','mm','a4'); var pw=210, ph=297; var ih=canvas.height*pw/canvas.width;
-    pdf.addImage(img,'JPEG',0,0,pw,ih,'','FAST'); var left=ih-ph;
-    while(left>0.5){ pdf.addPage(); pdf.addImage(img,'JPEG',0,-(ih-left),pw,ih,'','FAST'); left-=ph; }
+    /* larghezza naturale del documento: forzarla stretta troncava le
+       colonne di destra (indirizzi e totali) */
+    var larghezza=Math.max(760, Math.min(1100, doc.scrollWidth||980));
+    doc.style.width=larghezza+'px';
+    void doc.offsetWidth;
+
+    var tagli=puntiDiTaglio(doc);
+    var scala=2;
+    var canvas=await html2canvas(doc,{scale:scala,backgroundColor:'#ffffff',useCORS:true,
+      windowWidth:larghezza+40,width:larghezza});
+
+    var pdf=new window.jspdf.jsPDF('p','mm','a4');
+    var PW=210, PH=297, MX=9, MTOP=9, MBOT=14;      /* margini in mm */
+    var utileMM=PH-MTOP-MBOT, larghMM=PW-2*MX;
+    var pxPerMM=canvas.width/larghMM;                /* pixel di canvas per mm di carta */
+    var utilePX=Math.floor(utileMM*pxPerMM);
+
+    var fette=affettaPagine(canvas.height, utilePX, tagli.map(function(y){ return Math.round(y*scala); }));
+    var intestazione=(P.head.numero?('Ordine n. '+P.head.numero):'Copia Commissioni')
+      + (P.cli.ragione?(' · '+P.cli.ragione):'');
+    var sigillo=DOC.hash?('SHA-256 '+DOC.hash.slice(0,16)+'…'):'';
+
+    var taglio=document.createElement('canvas'); var ctx=taglio.getContext('2d');
+    for(var i=0;i<fette.length;i++){
+      var da=fette[i][0], alt=fette[i][1];
+      taglio.width=canvas.width; taglio.height=alt;
+      ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,taglio.width,taglio.height);
+      ctx.drawImage(canvas,0,da,canvas.width,alt,0,0,canvas.width,alt);
+      if(i) pdf.addPage();
+      pdf.addImage(taglio.toDataURL('image/jpeg',0.92),'JPEG',MX,MTOP,larghMM,alt/pxPerMM,'','FAST');
+      /* piè di pagina: dove sono e di che documento si tratta */
+      pdf.setFontSize(7); pdf.setTextColor(120,130,128);
+      pdf.text(intestazione.slice(0,88), MX, PH-6);
+      pdf.text('Pagina '+(i+1)+' di '+fette.length, PW-MX, PH-6, {align:'right'});
+      if(sigillo) pdf.text(sigillo, PW/2, PH-6, {align:'center'});
+    }
     pdf.save(filename());
+    toast('PDF salvato · '+fette.length+(fette.length===1?' pagina':' pagine'));
   }catch(e){ console.error(e); alert('Export non riuscito ('+e.message+'). Uso la stampa di sistema.'); window.print(); }
   finally{ doc.style.width=prevW; doc.classList.remove('exporting'); unfreeze(swaps); }
+}
+/* Altezze a cui si può tagliare senza spezzare nulla: il fondo di ogni
+   elemento che deve restare intero (righe di tabella, campi, riquadri,
+   firme, paragrafi). Misurate rispetto all'inizio del documento. */
+function puntiDiTaglio(doc){
+  var base=doc.getBoundingClientRect().top + window.pageYOffset;
+  var sel='tr, .fld, .bf, .ff, .cf, .card, .sec, .stepbox, .sigbox, .sigdone, .clausebox, p, li, .bankblock, .alist li, .mandato, .totbox, .viewbar, .adr';
+  var set={};
+  doc.querySelectorAll(sel).forEach(function(el){
+    if(!el.offsetParent && el.offsetHeight===0) return;
+    var r=el.getBoundingClientRect();
+    if(r.height<=0) return;
+    set[Math.round(r.bottom + window.pageYOffset - base)]=1;
+  });
+  var ys=Object.keys(set).map(Number).sort(function(a,b){ return a-b; });
+  /* un punto è sicuro solo se nessun elemento lo attraversa */
+  var blocchi=[];
+  doc.querySelectorAll('tr, .fld, .bf, .ff, .sigdone, li, p').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.height<=0) return;
+    blocchi.push([r.top+window.pageYOffset-base, r.bottom+window.pageYOffset-base]);
+  });
+  return ys.filter(function(y){
+    for(var i=0;i<blocchi.length;i++){ if(y>blocchi[i][0]+0.5 && y<blocchi[i][1]-0.5) return false; }
+    return true;
+  });
+}
+/* Divide l'altezza totale in pagine, chiudendo ciascuna sull'ultimo punto
+   sicuro disponibile invece che al millimetro esatto. */
+function affettaPagine(totale, utile, tagli){
+  var fette=[], da=0, guardia=0;
+  while(da<totale-1 && guardia++<200){
+    var resto=totale-da;
+    if(resto<=utile){ fette.push([da,resto]); break; }
+    var limite=da+utile, scelto=0;
+    for(var i=0;i<tagli.length;i++){
+      /* almeno un quarto di pagina, altrimenti si spreca carta */
+      if(tagli[i]>da+utile*0.25 && tagli[i]<=limite && tagli[i]>scelto) scelto=tagli[i];
+    }
+    if(!scelto) scelto=limite;               /* blocco più alto di una pagina: taglio netto */
+    fette.push([da, scelto-da]);
+    da=scelto;
+  }
+  if(!fette.length) fette.push([0,totale]);
+  return fette;
 }
 async function printDoc(){ if(!(await guardIntegrity('print'))) return; window.print(); }
 
@@ -3841,7 +3924,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v2.9.1';
+var APP_VERSION='v3.0.0';
 /* Data di riserva: vale solo se la pagina non espone la data di
    pubblicazione. Quella vera la prende il server, così non può più
    restare indietro rispetto alla versione. */
