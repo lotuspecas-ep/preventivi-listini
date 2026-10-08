@@ -83,6 +83,7 @@
   .adr{display:flex;gap:6px}
   .adr .acap{flex:0 0 58px} .adr .acit{flex:1 1 auto;min-width:70px}
   .adr .aprv{flex:0 0 34px;text-transform:uppercase} .adr .anaz{flex:0 0 72px}
+  .sigmeta .fesbadge.alt{background:#F6EFDF;color:#7A5B18;border-color:#C9A64E}
   .adrline{display:none;font-size:13px;color:var(--ink);letter-spacing:.1px;padding:3px 2px}
   .supplier .fld label{flex-basis:96px}
   .supplier .v{font-size:12px;color:var(--ink)}
@@ -524,6 +525,10 @@
   .cesec:first-child{margin-top:0;border-top:0;padding-top:0}
   .cesec small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px}
   .cenote{margin-top:8px}
+  .incluso{font-size:11.5px;font-weight:700;color:var(--teal-deep);letter-spacing:.2px}
+  .mandato{margin-top:10px;padding:9px 11px;border:1px dashed var(--line);border-radius:8px;background:var(--tint2)}
+  .mandato .mtesto{display:block;font-size:11.5px;color:var(--ink);line-height:1.45}
+  .mandato .mstato{display:block;margin-top:5px;font-size:10.5px;font-weight:700;color:var(--teal-deep)}
   .tipopick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
   .tipopick label{display:block;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;
     background:var(--paper);transition:border-color .12s,background .12s}
@@ -1385,7 +1390,7 @@
               <label class="bf"><span>BIC / SWIFT (opz.)</span><span class="ibanwrap"><input class="in mono bicin" data-k="pay.sdd.bic" placeholder="ABCDITMMXXX"><i class="vdot"></i></span></label>
               <label class="bf"><span>Tipo addebito</span><input class="in" value="Ricorrente" disabled></label>
             </div>
-            <label class="mconsent" style="margin-top:10px"><input type="checkbox" data-k="pay.sdd.consent"><span>Il cliente sottoscrive il mandato SEPA e autorizza gli addebiti ricorrenti alle scadenze del piano. Il rimborso segue le regole dello schema scelto.</span></label>
+            <div class="mandato" id="sddMandato"><span class="mtesto">Con la firma di accettazione il cliente sottoscrive il mandato SEPA e autorizza gli addebiti ricorrenti alle scadenze del piano. Il rimborso segue le regole dello schema scelto.</span><span class="mstato" id="sddStato"></span></div>
           </div>
         </div>
       </div>
@@ -1521,6 +1526,7 @@
         <button class="padclear" type="button" onclick="clearPad()">Cancella</button>
       </div>
       <label class="mconsent"><input type="checkbox" id="sfConsent"><span id="sfConsentText"></span></label>
+      <label class="mconsent hide" id="sfMandatoRow"><input type="checkbox" id="sfMandato"><span>Sottoscrivo il mandato SEPA Direct Debit e autorizzo l'addebito sul conto indicato nel documento, alle scadenze del piano.</span></label>
       <div class="merr" id="sfErr"></div>
     </div>
     <div class="mfoot">
@@ -1535,7 +1541,10 @@
   <div class="mcard">
     <div class="mhead"><span id="eTitle">Mancano dei dati</span><button class="mx" type="button" onclick="closeErr()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody"><p class="mintro" id="eIntro"></p><ul class="elist" id="eList"></ul></div>
-    <div class="mfoot"><button class="tb solid" type="button" onclick="closeErr()">Ho capito, correggo</button></div>
+    <div class="mfoot">
+      <button class="tb ghost dark hide" id="eForceAll" type="button" onclick="forceAll()">Procedi con tutti questi dati</button>
+      <button class="tb solid" type="button" onclick="closeErr()">Chiudi e correggo</button>
+    </div>
   </div>
 </div>
 
@@ -1583,8 +1592,16 @@
   <div class="mcard">
     <div class="mhead"><span id="upTitle">Carica copia firmata</span><button class="mx" type="button" onclick="closeUpload()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody">
-      <p class="mintro">Per clienti che firmano il PDF a mano (scansione) o con firma digitale qualificata. Il file viene archiviato e il documento passa a "Firmato".</p>
+      <p class="mintro">Per il cliente che stampa il PDF e lo firma a mano, o che lo firma con firma digitale qualificata. Il file viene archiviato, le firme del cliente risultano apposte su carta e il documento passa a "Firmato".</p>
       <label class="ff"><span>PDF firmato (max 20 MB)</span><input type="file" id="upFile" accept="application/pdf,.pdf" class="box"></label>
+      <div class="fgrid two">
+        <label class="ff"><span>Chi ha firmato *</span><input class="box" id="upNome" placeholder="Nome e cognome come in calce"></label>
+        <label class="ff"><span>Data della firma</span><input class="box" id="upData" type="date"></label>
+      </div>
+      <label class="ff"><span>Modalità</span><select class="box" id="upModo">
+        <option value="cartacea">Firma autografa su carta (scansione o foto)</option>
+        <option value="qualificata">Firma digitale qualificata sul PDF</option>
+      </select></label>
       <label class="mconsent"><input type="checkbox" id="upCheck"><span>Ho verificato che il PDF firmato corrisponde al documento emesso (stesso numero, importi e scadenze).</span></label>
       <div class="merr" id="upErr"></div>
     </div>
@@ -1925,7 +1942,11 @@ function computeAll(p){
   var imp=0;
   ['sw','hw'].forEach(function(k){ (p[k]||[]).forEach(function(r,i){
     var q=num(r.qty), pr=cents(r.price), m=lineMesi(r), t=Math.round(q*pr*m);
-    imp+=t; c.lines.push({k:k,i:i,totC:t,mesi:m}); }); });
+    /* riga compilata ma senza addebito: è inclusa nella fornitura, oppure
+       il suo importo è già conteggiato in un'altra voce */
+    var descr=(r.nome||r.codice||r.descr||'').trim();
+    var prezzoScritto=(''+(r.price==null?'':r.price)).trim()!=='';
+    imp+=t; c.lines.push({k:k,i:i,totC:t,mesi:m, inclusa:(t===0 && !!descr && prezzoScritto)}); }); });
   c.nol = p.pay.mode==='noleggio';
   c.mesi = c.nol ? (parseInt(p.pay.nol&&p.pay.nol.mesi,10)||0) : 0;
   c.righeC=imp;
@@ -2009,19 +2030,29 @@ function calcCheck(p,c){
 
 /* validazione completa per l'emissione */
 var FORCIBLE=['cli.piva','cli.sdi','cli.pec','cli.cap','cli.prov','pay.riba.iban','pay.riba.bic','pay.sdd.iban','pay.sdd.bic','pay.sdd.cf','pay.bank.bic'];
+/* Dati senza i quali il documento non è un documento: non si forzano mai.
+   Tutto il resto, dopo tre tentativi, si può lasciare come sta e procedere:
+   l'obiettivo è completare e far firmare, non vincere una discussione con un
+   modulo. Ogni campo forzato resta segnato nel documento. */
+var NUCLEO=['cli.ragione','head.data'];
 function validateDoc(p,c){
   var e=[];
   var forced=p.forced||{};
-  function req(k,v,msg,sec){ if(!(''+(v==null?'':v)).trim()) e.push({k:k,msg:msg,sec:sec}); }
-  /* formato: se vuoto è obbligatorio; se non valido è forzabile con inserimento manuale */
+  function push(k,msg,sec){
+    if(NUCLEO.indexOf(k)>=0){ e.push({k:k,msg:msg,sec:sec}); return; }
+    if(!forced[k]) e.push({k:k,msg:msg,sec:sec,forcible:true});
+  }
+  /* campo mancante: obbligatorio, ma forzabile se non è del nucleo */
+  function req(k,v,msg,sec){ if(!(''+(v==null?'':v)).trim()) push(k,msg,sec); }
+  /* formato: se vuoto è obbligatorio; se non valido è forzabile */
   function fmt(k,v,ok,missing,invalid,sec,optional){
     var s=(''+(v==null?'':v)).trim();
-    if(!s){ if(!optional) e.push({k:k,msg:missing,sec:sec}); return; }
+    if(!s){ if(!optional) push(k,missing,sec); return; }
     if(!ok(s) && !forced[k]) e.push({k:k,msg:invalid,sec:sec,forcible:true});
   }
   req('head.numero',p.head.numero,'Numero ordine','Intestazione');
-  if(!isoOk(p.head.data)) e.push({k:'head.data',msg:'Data del documento',sec:'Intestazione'});
-  if(!(parseInt(p.head.validita,10)>0)) e.push({k:'head.validita',msg:'Giorni di validità dell\'offerta',sec:'Intestazione'});
+  if(!isoOk(p.head.data)) push('head.data','Data del documento','Intestazione');
+  if(!(parseInt(p.head.validita,10)>0)) push('head.validita','Giorni di validità dell\'offerta','Intestazione');
   req('creator.nome',p.creator.nome,'Nome di chi compila','Compilato da');
   req('creator.cognome',p.creator.cognome,'Cognome di chi compila','Compilato da');
   req('creator.societa',p.creator.societa,'Società di riferimento','Compilato da');
@@ -2032,38 +2063,42 @@ function validateDoc(p,c){
   fmt('cli.prov',p.cli.prov,provValid,'Sede legale: provincia','Provincia: due lettere (es. MI)','Cliente',true);
   fmt('cli.piva',p.cli.piva,taxIdValid,'P.IVA / C.F.','P.IVA / C.F. non valida','Cliente');
   if(!(''+(p.cli.sdi||'')).trim() && !(''+(p.cli.pec||'')).trim())
-    e.push({k:'cli.sdi',msg:'Codice SDI o PEC: serve almeno uno dei due per la fatturazione',sec:'Cliente'});
+    push('cli.sdi','Codice SDI o PEC: serve almeno uno dei due per la fatturazione','Cliente');
   fmt('cli.sdi',p.cli.sdi,sdiValid,'Codice SDI','Codice SDI: 7 caratteri','Cliente',true);
   fmt('cli.pec',p.cli.pec,emailValid,'PEC','Indirizzo PEC non valido','Cliente',true);
   req('cli.referente',p.cli.referente,'Referente','Cliente');
   if(!(''+(p.cli.contatti||'')).trim() && !(''+(p.cli.email||'')).trim())
-    e.push({k:'cli.contatti',msg:'Telefono o email: serve almeno un recapito',sec:'Cliente'});
+    push('cli.contatti','Telefono o email: serve almeno un recapito','Cliente');
   fmt('cli.email',p.cli.email,emailValid,'Email','Indirizzo email non valido','Cliente',true);
   var anyLine=false;
   [['sw','Software','nome'],['hw','Hardware','descr']].forEach(function(t){
     (p[t[0]]||[]).forEach(function(r,i){
-      var hasTxt=(r.nome||r.codice||r.descr||'').trim(), q=num(r.qty), pr=num(r.price);
-      if(!hasTxt && !q && !pr) return;
-      if(!hasTxt) e.push({k:t[0]+'.'+i+'.'+t[2],msg:'Riga '+(i+1)+': descrizione',sec:t[1]});
-      if(!(q>0)) e.push({k:t[0]+'.'+i+'.qty',msg:'Riga '+(i+1)+': quantità',sec:t[1]});
-      if(!(pr>0)) e.push({k:t[0]+'.'+i+'.price',msg:'Riga '+(i+1)+': prezzo unitario',sec:t[1]});
-      if(hasTxt&&q>0&&pr>0) anyLine=true;
+      var hasTxt=(r.nome||r.codice||r.descr||'').trim(), q=num(r.qty);
+      var prTxt=(''+(r.price==null?'':r.price)).trim(), pr=num(r.price);
+      if(!hasTxt && !q && !prTxt) return;
+      if(!hasTxt) push(t[0]+'.'+i+'.'+t[2],'Riga '+(i+1)+': descrizione',t[1]);
+      if(!(q>0)) push(t[0]+'.'+i+'.qty','Riga '+(i+1)+': quantità',t[1]);
+      /* prezzo zero è una scelta legittima: la voce è inclusa, o il suo
+         importo è già conteggiato altrove. Si segnala solo il campo vuoto. */
+      if(!prTxt) push(t[0]+'.'+i+'.price','Riga '+(i+1)+': prezzo unitario (metti 0 se è inclusa)',t[1]);
+      else if(pr<0) push(t[0]+'.'+i+'.price','Riga '+(i+1)+': il prezzo non può essere negativo',t[1]);
+      if(hasTxt&&q>0&&prTxt&&pr>=0) anyLine=true;
     });
   });
-  if(!anyLine) e.push({k:'sw.0.nome',msg:'Almeno una riga software o hardware completa',sec:'Righe'});
-  if(p.cons.spese==='addebitate' && !(cents(p.cons.speseAmt)>0)) e.push({k:'cons.speseAmt',msg:'Importo delle spese addebitate',sec:'Consegna e spese'});
+  if(!anyLine) push('sw.0.nome','Almeno una riga software o hardware compilata','Righe');
+  if(p.cons.spese==='addebitate' && !(cents(p.cons.speseAmt)>0)) push('cons.speseAmt','Importo delle spese addebitate','Consegna e spese');
   var pay=p.pay;
-  if(!pay.plan) e.push({k:'pay.plan',msg:'Scegli il piano del residuo',sec:'Pagamento'});
+  if(!pay.plan) push('pay.plan','Scegli il piano del residuo','Pagamento');
   if(pay.mode==='noleggio'){
-    if(!pay.nol || !pay.nol.tipo) e.push({k:'pay.nol.tipo',msg:'Oggetto del noleggio',sec:'Pagamento'});
-    if(!pay.nol || !(parseInt(pay.nol.mesi,10)>0)) e.push({k:'pay.nol.mesi',msg:'Durata del noleggio',sec:'Pagamento'});
+    if(!pay.nol || !pay.nol.tipo) push('pay.nol.tipo','Oggetto del noleggio','Pagamento');
+    if(!pay.nol || !(parseInt(pay.nol.mesi,10)>0)) push('pay.nol.mesi','Durata del noleggio','Pagamento');
   }
-  if(pay.plan==='rateale' && !rateOffsets(pay).length) e.push({k:'pay.n',msg:'Numero di rate',sec:'Pagamento'});
+  if(pay.plan==='rateale' && !rateOffsets(pay).length) push('pay.n','Numero di rate','Pagamento');
   if(pay.plan==='custom') (pay.custom||[]).forEach(function(r,i){ req('pay.custom.'+i+'.voce',r.voce,'Voce '+(i+1)+': descrizione','Pagamento'); });
   if(c.resC>0 || pay.ant.on){
     if(pay.method==='bonifico' || pay.ant.on){
       req('pay.bank.banca',pay.bank.banca,'Banca del fornitore (bonifico)','Coordinate bonifico');
-      if(!ibanValid(pay.bank.iban)) e.push({k:'pay.bank.iban',msg:pay.bank.iban?'IBAN fornitore non valido':'IBAN fornitore',sec:'Coordinate bonifico'});
+      if(!ibanValid(pay.bank.iban)) push('pay.bank.iban',pay.bank.iban?'IBAN fornitore non valido':'IBAN fornitore','Coordinate bonifico');
       fmt('pay.bank.bic',pay.bank.bic,bicValid,'','BIC fornitore non valido','Coordinate bonifico',true);
     }
     if(c.resC>0 && pay.method==='riba'){
@@ -2077,10 +2112,14 @@ function validateDoc(p,c){
       fmt('pay.sdd.cf',pay.sdd.cf,taxIdValid,'C.F. / P.IVA intestatario','C.F. / P.IVA intestatario non valido','SDD');
       fmt('pay.sdd.iban',pay.sdd.iban,ibanValid,'IBAN da addebitare','IBAN da addebitare non valido','SDD');
       fmt('pay.sdd.bic',pay.sdd.bic,bicValid,'','BIC non valido','SDD',true);
-      if(!pay.sdd.consent) e.push({k:'pay.sdd.consent',msg:'Sottoscrizione del mandato SEPA',sec:'SDD'});
+      /* Il mandato SEPA lo sottoscrive il cliente al momento della firma,
+         non chi compila: non è un campo da spuntare qui. */
     }
   }
-  if(!(c.totC>0)) e.push({k:'sw.0.price',msg:'Il totale del documento è zero',sec:'Righe'});
+  /* un documento a totale zero è quasi sempre una dimenticanza, ma a volte
+     è voluto: tutte le voci incluse, con il corrispettivo già altrove.
+     Si segnala, e dopo tre tentativi si procede lo stesso. */
+  if(!(c.totC>0)) push('sw.0.price','Il totale del documento è zero: controlla i prezzi, oppure procedi se le voci sono tutte incluse','Righe');
   calcCheck(p,c).forEach(function(x){ e.push({k:x.k,msg:x.msg,sec:'Calcoli'}); });
   /* dedup per chiave+messaggio */
   var seen={}; return e.filter(function(x){ var id=x.k+'|'+x.msg; if(seen[id]) return false; seen[id]=1; return true; });
@@ -2245,7 +2284,8 @@ function refresh(){
   var pay=P.pay, nol=pay.mode==='noleggio';
   c.lines.forEach(function(l){ var td=document.querySelector('[data-tot="'+l.k+'.'+l.i+'"]');
     if(!td) return;
-    td.innerHTML = eurC(l.totC) + (l.mesi>1 ? '<small class="mult">'+l.mesi+' mesi</small>' : ''); });
+    td.innerHTML = l.inclusa ? '<span class="incluso">Incluso</span>'
+                 : eurC(l.totC) + (l.mesi>1 ? '<small class="mult">'+l.mesi+' mesi</small>' : ''); });
   setText('validUntil',c.validUntil?isoFmt(c.validUntil):'—');
   /* segmented state */
   document.querySelectorAll('#doc .pseg label').forEach(function(l){ var i=l.querySelector('input'); if(i) l.classList.toggle('on',i.checked); });
@@ -2303,6 +2343,7 @@ function refresh(){
   $('blkBonifico').classList.toggle('hide',!(pay.method==='bonifico'||pay.ant.on));
   $('blkRiba').classList.toggle('hide',!(needRes && pay.method==='riba'));
   $('blkSdd').classList.toggle('hide',!(needRes && pay.method==='sdd'));
+  renderMandatoSdd();
   /* consegna */
   $('speseRow').classList.toggle('hide',P.cons.spese!=='addebitate');
   $('attivAmt').innerHTML=eurBoth(Math.round(c.attivC*(1+IVA_RATE)));
@@ -2436,11 +2477,11 @@ function updateFname(){ setText('fnamePreview',filename()); }
 /* ================= VALIDAZIONE UI ================= */
 var FAILS={};   /* tentativi di emissione falliti per campo (formato non valido) */
 var FORCE_AFTER=3;
-var FORCED_NOTE='* Inserimento manuale libero: dato non verificato automaticamente, sotto la responsabilità di chi compila.';
+var FORCED_NOTE='* Dato accettato senza verifica automatica, sotto la responsabilità di chi compila.';
 function forceField(k){
   collect(); P.forced=P.forced||{}; P.forced[k]=true;
   var el=fieldFor(k); if(el) clearErr(el);
-  refresh(); toast('Inserimento manuale attivato per il campo');
+  refresh(); toast('Campo accettato così com\'è: resta segnato nel documento');
 }
 function unforceField(k){ collect(); if(P.forced) delete P.forced[k]; refresh(); }
 function renderForced(){
@@ -2473,28 +2514,45 @@ function markErrors(list){
     el.classList.add('err');
     var host=el.closest('.fld .val, .bf, .ff, .cf, td, .mconsent') || el.parentNode;
     if(host && !host.querySelector('.errmsg')){ var s=document.createElement('span'); s.className='errmsg'; s.textContent=x.msg;
-      if(x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER){ var b=document.createElement('button'); b.type='button'; b.className='lnk'; b.textContent='Inserimento manuale libero'; b.onclick=function(){ forceField(x.k); }; s.appendChild(document.createTextNode(' · ')); s.appendChild(b); }
+      if(x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER){ var b=document.createElement('button'); b.type='button'; b.className='lnk'; b.textContent='Procedi senza questo dato'; b.onclick=function(){ forceField(x.k); }; s.appendChild(document.createTextNode(' · ')); s.appendChild(b); }
       host.appendChild(s); }
     var step=el.closest('.pstep'); if(step) step.classList.remove('off');
   });
 }
 function clearErr(el){ el.classList.remove('err'); var host=el.closest('.fld .val, .bf, .ff, .cf, td, .mconsent')||el.parentNode; var m=host&&host.querySelector('.errmsg'); if(m) m.remove(); }
 function clearAllErr(){ document.querySelectorAll('#doc .err').forEach(function(e){ e.classList.remove('err'); }); document.querySelectorAll('#doc .errmsg').forEach(function(e){ e.remove(); }); }
+/* accetta in un colpo solo tutti i dati già oltre i tre tentativi:
+   con sette campi da forzare, sette clic sono solo un ostacolo in più */
+var ERR_LIST=[];
+function forceAll(){
+  collect(); P.forced=P.forced||{};
+  var n=0;
+  ERR_LIST.forEach(function(x){
+    if(x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER && !P.forced[x.k]){ P.forced[x.k]=true; n++; }
+  });
+  closeErr(); refresh();
+  toast(n?(n+(n===1?' campo accettato':' campi accettati')+' così come sono: restano segnati nel documento'):'Nessun campo da accettare');
+  if(n) setTimeout(function(){ emitDoc(); },120);
+}
 function showErrors(title,intro,list){
+  ERR_LIST=list||[];
   setText('eTitle',title); setText('eIntro',intro);
   var ul=$('eList'); ul.innerHTML='';
   list.forEach(function(x,i){
     var li=document.createElement('li');
     var canForce = x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER;
-    var hint = x.forcible && !canForce ? '<small class="fhint">Tentativo '+(FAILS[x.k]||0)+' di '+FORCE_AFTER+': poi potrai inserirlo manualmente</small>' : '';
+    var hint = x.forcible && !canForce ? '<small class="fhint">Tentativo '+(FAILS[x.k]||0)+' di '+FORCE_AFTER+': al terzo potrai procedere comunque</small>' : '';
     li.innerHTML='<b>'+esc(x.sec||'')+'</b><span>'+esc(x.msg)+hint+'</span>'+
-      (canForce?'<button type="button" class="force" data-f="'+i+'">Inserimento manuale libero</button>':'')+
+      (canForce?'<button type="button" class="force" data-f="'+i+'">Procedi senza questo dato</button>':'')+
       (fieldFor(x.k)?'<button type="button" data-i="'+i+'">Vai al campo</button>':'');
     ul.appendChild(li);
   });
   ul.onclick=function(ev){
     var fb=ev.target.closest('button[data-f]'); if(fb){ var y=list[+fb.getAttribute('data-f')]; forceField(y.k); fb.closest('li').remove(); if(!ul.children.length) closeErr(); return; }
     var b=ev.target.closest('button[data-i]'); if(!b) return; var x=list[+b.getAttribute('data-i')]; closeErr(); goField(x.k); };
+  var forzabili=ERR_LIST.filter(function(x){ return x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER; }).length;
+  var fa=$('eForceAll');
+  if(fa) fa.classList.toggle('hide', !(forzabili>1 && forzabili===ERR_LIST.length));
   $('errModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
 }
 function closeErr(){ $('errModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
@@ -2504,6 +2562,15 @@ function goField(k){ var el=fieldFor(k); if(!el) return; try{ el.scrollIntoView(
 /* ================= STATO DOCUMENTO ================= */
 function isLocked(){ return !!SHARE || !!DOC.viewer || DOC.status==='emesso'||DOC.status==='firmato'; }
 function hasClientSign(){ return DOC.status==='firmato' || !!(P.sign&&(P.sign.acc||P.sign.vess)); }
+function renderMandatoSdd(){
+  if(!$('sddStato')) return;
+  var fa=P&&P.sign&&P.sign.acc;
+  setText('sddStato',
+    (fa && fa.mandatoSdd) ? ('Mandato sottoscritto da '+(fa.nome||'cliente')+' il '+(fa.ts||'')) :
+    (fa && (P.pay.sdd&&P.pay.sdd.consent)) ? 'Mandato sottoscritto con la firma di accettazione' :
+    fa ? 'Firma di accettazione presente, mandato non sottoscritto' :
+    'Da sottoscrivere: la spunta compare al cliente nel momento della firma');
+}
 function applyLock(){
   var locked=isLocked();
   var d=$('doc'); d.classList.toggle('docLocked',locked);
@@ -2591,11 +2658,22 @@ function openSign(slot, keepConsent){
                                 : (P.sign.acc||P.sign.vess||{nome:P.cli.referente,ruolo:'',luogo:'',doc:''}));
   $('sfNome').value=pre.nome||''; $('sfRuolo').value=pre.ruolo||''; $('sfLuogo').value=pre.luogo||''; $('sfDoc').value=pre.doc||'';
   $('sfConsent').checked=!!(keepConsent && cur && cur.consent);
+  var serveMandato=sddDaSottoscrivere(slot);
+  $('sfMandatoRow').classList.toggle('hide',!serveMandato);
+  $('sfMandato').checked=!!(keepConsent && cur && cur.mandatoSdd);
   document.documentElement.classList.add('modal-open');
   $('signModal').classList.remove('hide');
   if(!pad) pad=makePad($('sigPad'));
   requestAnimationFrame(function(){ pad.size(); pad.clear(); });
   setTimeout(function(){ if(pad&&pad.isEmpty()) pad.size(); },70);
+}
+/* Il mandato SEPA è un atto del cliente, non un campo del fornitore:
+   si sottoscrive con la firma di accettazione e resta dentro la firma,
+   che non entra nell'impronta del contenuto. */
+function sddDaSottoscrivere(slot){
+  if(slot!=='acc') return false;
+  var c=LAST.c||computeAll(clone(P));
+  return P.pay.method==='sdd' && c.resC>0;
 }
 function clearPad(){ if(pad) pad.clear(); }
 function cancelSign(){ $('signModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); activeSlot=null; emitPending=false; }
@@ -2603,14 +2681,18 @@ function validateSign(d){
   if(!d.nome.trim()) return 'Inserisci nome e cognome.';
   if(!d.luogo.trim()) return 'Inserisci il luogo.';
   if(!d.consent) return 'Spunta il consenso richiesto.';
+  if(d.serveMandato && !d.mandatoSdd) return 'Per l\'addebito SEPA serve la sottoscrizione del mandato.';
   if(d.empty) return 'Apponi la firma nel riquadro.';
   return '';
 }
 async function confirmSign(){
   var d={ nome:$('sfNome').value, ruolo:$('sfRuolo').value, luogo:$('sfLuogo').value, doc:$('sfDoc').value,
-    consent:$('sfConsent').checked, empty: pad?pad.isEmpty():true };
+    consent:$('sfConsent').checked, empty: pad?pad.isEmpty():true,
+    serveMandato:sddDaSottoscrivere(activeSlot), mandatoSdd:$('sfMandato').checked };
   var err=validateSign(d); if(err){ $('sfErr').textContent=err; return; }
   d.ts=new Date().toLocaleString('it-IT'); d.tsIso=new Date().toISOString(); d.img=pad?pad.dataURL():''; delete d.empty;
+  if(!d.serveMandato) delete d.mandatoSdd;
+  delete d.serveMandato;
   LAST_SIGNER.luogo=d.luogo;
   var slot=activeSlot, wasEmit=emitPending;
   delete REDO_PRE[slot];
@@ -2627,6 +2709,7 @@ async function confirmSign(){
   toast(status==='firmato'?'Documento firmato dal cliente':'Firma cliente registrata');
 }
 function renderSign(slot){
+  if(slot==='acc') renderMandatoSdd();
   var s=P&&P.sign?P.sign[slot]:null; var box=$('slot-'+slot); if(!box)return;
   var empty=box.querySelector('.sigempty'), done=box.querySelector('.sigdone');
   var locked=isLocked();
@@ -2636,10 +2719,17 @@ function renderSign(slot){
     return;
   }
   empty.classList.add('hide'); done.classList.remove('hide');
-  var img=done.querySelector('.sigimg'); if(s.img) img.src=s.img;
+  /* firma raccolta fuori dal portale: non c'è un tracciato grafico da mostrare */
+  var img=done.querySelector('.sigimg');
+  if(s.img){ img.src=s.img; img.classList.remove('hide'); } else { img.removeAttribute('src'); img.classList.add('hide'); }
   var p1=['<b>'+esc(s.nome)+'</b>']; if((s.ruolo||'').trim()) p1.push(esc(s.ruolo));
   var p2=[]; if((s.doc||'').trim()) p2.push('Doc. '+esc(s.doc)); p2.push(esc(s.luogo)); p2.push(esc(s.ts));
-  done.querySelector('.sigmeta').innerHTML=p1.join(' · ')+'<br>'+p2.join(' · ')+'<br><span class="fesbadge">FES RINFORZATA</span>'+(s.docHash?' <span class="mono" style="font-size:9px;color:var(--muted)">#'+s.docHash.slice(0,12)+'</span>':'');
+  var fuori=(s.tipo==='cartacea'||s.tipo==='qualificata');
+  var badge = s.tipo==='qualificata' ? '<span class="fesbadge alt">FIRMA DIGITALE QUALIFICATA</span>'
+            : s.tipo==='cartacea'    ? '<span class="fesbadge alt">FIRMA AUTOGRAFA SU CARTA</span>'
+                                     : '<span class="fesbadge">FES RINFORZATA</span>';
+  if(fuori) p2.push('copia firmata in archivio');
+  done.querySelector('.sigmeta').innerHTML=p1.join(' · ')+'<br>'+p2.filter(Boolean).join(' · ')+'<br>'+badge+(s.docHash?' <span class="mono" style="font-size:9px;color:var(--muted)">#'+s.docHash.slice(0,12)+'</span>':'');
   /* Rifai e Annulla: sulle firme del cliente finché il documento non è
      firmato da entrambi; sulla firma dell'emittente solo prima che il
      cliente abbia firmato. A documento firmato si passa per la revisione. */
@@ -2723,7 +2813,13 @@ async function emitDoc(){
   errs.forEach(function(x){ if(x.forcible) FAILS[x.k]=(FAILS[x.k]||0)+1; });
   if(errs.length){
     markErrors(errs);
-    showErrors('Non puoi ancora emettere', errs.length+(errs.length===1?' dato da completare o correggere.':' dati da completare o correggere. I campi sono evidenziati in rosso.'), errs);
+    var bloccanti=errs.filter(function(x){ return !x.forcible; }).length;
+    var pronti=errs.filter(function(x){ return x.forcible && (FAILS[x.k]||0)>=FORCE_AFTER; }).length;
+    var intro = errs.length+(errs.length===1?' dato da controllare.':' dati da controllare. I campi sono evidenziati in rosso.');
+    if(bloccanti) intro+=' Ragione sociale del cliente e data del documento sono indispensabili: senza, il documento non esiste.';
+    if(pronti) intro+=' Per '+(pronti===1?'uno di questi':pronti+' di questi')+' puoi anche procedere così com\'è: resterà segnato nel documento.';
+    else if(!bloccanti) intro+=' Se un dato non ce l\'hai, riprova: al terzo tentativo potrai procedere lo stesso.';
+    showErrors(bloccanti?'Prima di emettere, due dati indispensabili':'Prima di emettere, controlla', intro, errs);
     return;
   }
   clearAllErr();
@@ -3168,11 +3264,13 @@ function shareUrl(token){ return location.origin+location.pathname+'?t='+token; 
 function emailValid(s){ return /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]{2,}$/.test((''+(s||'')).trim()); }
 function emailFrom(s){ var m=/[^\s@,;]+@[^\s@,;]+\.[^\s@,;]{2,}/.exec(s||''); return m?m[0]:''; }
 var LAST_SHARE=null;
+var SHARE_ESISTE=false;
 async function openShare(afterEmit){
   if(DOC.status!=='emesso'){ toast('Il link si genera solo per documenti emessi'); return; }
   if(!(sbConnected&&SB)){ toast('Serve la connessione al database'); return; }
   var ok=await guardIntegrity('firma'); if(!ok) return;
   var info=null; try{ var r=await SB.rpc('share_info',{p_id:DOC.id}); if(!r.error) info=r.data; }catch(e){}
+  SHARE_ESISTE=!!info;
   setText('shState', info ? (info.blocked?'Link attivo ma bloccato per troppi PIN errati.':info.expired?'Link scaduto.':'Link attivo fino al '+new Date(info.expires).toLocaleDateString('it-IT')+'. Il PIN non è recuperabile: generane uno nuovo se serve.') : 'Nessun link attivo per questo documento.');
   $('shResult').classList.add('hide'); $('shRevoke').classList.toggle('hide',!info);
   setText('shTitle', afterEmit ? 'Documento emesso · come vuoi procedere?' : 'Invia al cliente per la firma');
@@ -3184,13 +3282,15 @@ async function generateShare(){
   var c=computeAll(clone(P));
   var days=c.validUntil?Math.max(1,isoDiff(isoToday(),c.validUntil)):30;
   var token=randHex(32), pin=randPin();
+  if(SHARE_ESISTE && !confirm('Per questo documento esiste già un link attivo.\n\nCreandone uno nuovo, quello inviato al cliente smette di funzionare: se lo ha aperto in questo momento, non riuscirà a firmare.\n\nProcedo con un link nuovo?')) return;
   var r=await SB.rpc('create_share',{p_id:DOC.id,p_token:token,p_pin:pin,p_days:days});
   if(r.error){ toast('Link non creato: '+r.error.message); return; }
   LAST_SHARE={url:shareUrl(token),pin:pin,expires:r.data};
   $('shUrl').value=LAST_SHARE.url; setText('shPin',pin.slice(0,3)+' '+pin.slice(3,6));
   setText('shExp',new Date(r.data).toLocaleDateString('it-IT'));
   $('shResult').classList.remove('hide'); $('shRevoke').classList.remove('hide');
-  setText('shState','Link creato. Un eventuale link precedente non funziona più.');
+  SHARE_ESISTE=true;
+  setText('shState','Link creato. Il link precedente, se inviato, non funziona più: manda al cliente questo e il nuovo PIN.');
 }
 async function copyText(t,okMsg){ try{ await navigator.clipboard.writeText(t); toast(okMsg); }catch(e){ var i=$('shUrl'); i.select(); document.execCommand&&document.execCommand('copy'); toast(okMsg); } }
 function copyShareLink(){ if(LAST_SHARE) copyText(LAST_SHARE.url,'Link copiato'); }
@@ -3207,7 +3307,7 @@ function mailtoHref(){
 }
 async function revokeShare(){ if(!confirm('Disattivare il link? Il cliente non potrà più aprirlo.')) return;
   var r=await SB.rpc('revoke_share',{p_id:DOC.id}); if(r.error){ toast(r.error.message); return; }
-  LAST_SHARE=null; $('shResult').classList.add('hide'); $('shRevoke').classList.add('hide'); setText('shState','Link disattivato.'); }
+  LAST_SHARE=null; SHARE_ESISTE=false; $('shResult').classList.add('hide'); $('shRevoke').classList.add('hide'); setText('shState','Link disattivato.'); }
 
 /* ---- Condivisione con altri operatori (sola consultazione) ---- */
 async function openMembers(){
@@ -3243,6 +3343,8 @@ function openUpload(){
   if(DOC.status!=='emesso'){ toast('Disponibile per documenti emessi'); return; }
   if(!(sbConnected&&SB)){ toast('Serve la connessione al database'); return; }
   $('upFile').value=''; $('upCheck').checked=false; setText('upErr','');
+  $('upNome').value=(P.sign&&P.sign.acc&&P.sign.acc.nome)||P.cli.referente||'';
+  $('upData').value=isoToday(); $('upModo').value='cartacea';
   $('uploadModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
 }
 function closeUpload(){ $('uploadModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
@@ -3252,13 +3354,29 @@ async function doUpload(){
   if(f.type!=='application/pdf'&&!/\.pdf$/i.test(f.name)){ setText('upErr','Il file deve essere un PDF.'); return; }
   if(f.size>20*1024*1024){ setText('upErr','Massimo 20 MB.'); return; }
   if(!$('upCheck').checked){ setText('upErr','Conferma di aver verificato il contenuto.'); return; }
+  var nome=($('upNome').value||'').trim();
+  if(!nome){ setText('upErr','Indica chi ha firmato il documento.'); return; }
+  var modo=$('upModo').value, dataF=$('upData').value||isoToday();
   setText('upErr','Caricamento…');
   var path=DOC.id+'/'+Date.now()+'_firmato.pdf';
   var up=await SB.storage.from('firmati').upload(path,f,{contentType:'application/pdf',upsert:false});
   if(up.error){ setText('upErr','Caricamento non riuscito: '+up.error.message); return; }
   var buf=await f.arrayBuffer(); var fh=await crypto.subtle.digest('SHA-256',buf);
   var fileHash=Array.prototype.map.call(new Uint8Array(fh),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
-  P.meta=P.meta||{}; P.meta.signedCopy={path:path,name:f.name,size:f.size,fileHash:fileHash,docHash:DOC.hash,ts:new Date().toISOString(),by:USER?USER.email:''};
+  P.meta=P.meta||{};
+  P.meta.signedCopy={path:path,name:f.name,size:f.size,fileHash:fileHash,docHash:DOC.hash,
+    ts:new Date().toISOString(),by:USER?USER.email:'',modo:modo,firmatario:nome,dataFirma:dataF};
+  /* le firme del cliente risultano apposte fuori dal portale: restano
+     registrate nel documento, con l'indicazione di come sono state raccolte */
+  ['acc','vess'].forEach(function(slot){
+    if(P.sign[slot]) return;
+    P.sign[slot]={nome:nome, ruolo:'', luogo:'', doc:'', img:'',
+      ts:new Date(dataF+'T00:00:00').toLocaleDateString('it-IT'),
+      tipo:modo, channel:(modo==='qualificata'?'firma digitale qualificata':'firma autografa su carta'),
+      docHash:DOC.hash, copia:path,
+      mandatoSdd:(slot==='acc' && P.pay.method==='sdd') ? true : undefined};
+    logSign(slot, modo==='qualificata'?'firmata con firma digitale qualificata':'firmata a mano su carta', USER?USER.email:'');
+  });
   var r=await persist('firmato'); closeUpload(); applyLock();
   toast(r.remote?'Copia firmata archiviata · documento firmato':'Salvato in locale, sincronizzazione in sospeso');
 }
@@ -3270,7 +3388,7 @@ async function openSignedCopy(){
 
 /* ---- Modalità cliente (link) ---- */
 function shareErr(code,left){
-  return {LINK_NON_VALIDO:'Link non valido. Controlla di averlo copiato per intero.',LINK_SCADUTO:'Il link è scaduto. Chiedi al fornitore un nuovo link.',
+  return {LINK_NON_VALIDO:'Questo link non è più valido: ne è stato creato uno nuovo per lo stesso documento, oppure è stato revocato. Chiedi a Lotus Pecas Italia il link aggiornato (anche il PIN cambia).',LINK_SCADUTO:'Il link è scaduto. Chiedi al fornitore un nuovo link.',
     LINK_BLOCCATO:'Link bloccato per troppi PIN errati. Chiedi al fornitore un nuovo link.',PIN_ERRATO:'PIN errato. Tentativi rimasti: '+left+'.',
     HASH_DIVERSO:'Il documento è stato modificato dopo l\'emissione. Firma annullata: contatta il fornitore.',STATO_NON_FIRMABILE:'Il documento non è più firmabile.',
     GIA_FIRMATO:'Questa firma è già stata registrata.',SLOT_NON_VALIDO:'Firma non valida.'}[code]||code;
@@ -3546,7 +3664,7 @@ async function openListinoToken(token){
   try{
     var sb=await sbClient(); var r=await sb.rpc('open_listino',{p_token:token});
     if(r.error) throw r.error;
-    if(r.data.error){ host.innerHTML='<p class="note">'+esc({LINK_NON_VALIDO:'Link non valido.',LINK_SCADUTO:'Il link è scaduto: chiedi a Lotus Pecas Italia un link aggiornato.'}[r.data.error]||r.data.error)+'</p>'; return; }
+    if(r.data.error){ host.innerHTML='<p class="note">'+esc({LINK_NON_VALIDO:'Questo link non è più valido: ne è stato creato uno nuovo o è stato revocato. Chiedi a Lotus Pecas Italia il link aggiornato.',LINK_SCADUTO:'Il link è scaduto: chiedi a Lotus Pecas Italia un link aggiornato.'}[r.data.error]||r.data.error)+'</p>'; return; }
     L.items=r.data.items||[]; L.livToken=r.data.livello; L.stamp=r.data.stamp||null;
     setText('listinoSub', (LIV.filter(function(x){return x.k===L.livToken;})[0]||{t:''}).t + (r.data.etichetta?' · '+r.data.etichetta:'') + ' · link valido fino al '+new Date(r.data.expires).toLocaleDateString('it-IT'));
     var ch=$('livChips'); if(ch) ch.innerHTML='';
@@ -3723,7 +3841,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v2.7.0';
+var APP_VERSION='v2.9.0';
 var APP_BUILD='2026-10-07';
 /* Regole di calcolo con cui viene sigillato il documento. Si incrementa
    ogni volta che cambiano struttura o calcoli: i documenti emessi con una
