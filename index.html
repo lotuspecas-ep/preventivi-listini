@@ -3841,15 +3841,21 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v2.9.0';
-var APP_BUILD='2026-10-07';
+var APP_VERSION='v2.9.1';
+/* Data di riserva: vale solo se la pagina non espone la data di
+   pubblicazione. Quella vera la prende il server, così non può più
+   restare indietro rispetto alla versione. */
+var APP_BUILD='2026-10-08';
+var APP_PUBBLICATA='';
 /* Regole di calcolo con cui viene sigillato il documento. Si incrementa
    ogni volta che cambiano struttura o calcoli: i documenti emessi con una
    versione precedente restano leggibili ma non più verificabili. */
 var HASH_VERSION='3';
+function dataVersione(){ return APP_PUBBLICATA || APP_BUILD; }
 function stampVersion(){
-  var txt='Versione '+APP_VERSION+' · '+isoFmt(APP_BUILD);
-  ['appVer','appVerLogin','appVerDoc'].forEach(function(id){ var e=$(id); if(e) e.textContent = id==='appVer'?APP_VERSION+' ('+isoFmt(APP_BUILD)+')':txt; });
+  var d=isoFmt(dataVersione());
+  var txt='Versione '+APP_VERSION+' · '+d;
+  ['appVer','appVerLogin','appVerDoc'].forEach(function(id){ var e=$(id); if(e) e.textContent = id==='appVer'?APP_VERSION+' ('+d+')':txt; });
 }
 /* Versioni diverse dello stesso file in circolazione producono impronte
    diverse sullo stesso documento: l'app controlla di essere aggiornata. */
@@ -3859,6 +3865,12 @@ async function checkAppUpdate(){
     var u=location.origin+location.pathname;
     var r=await fetch(u,{cache:'reload'});
     if(!r.ok) return '';
+    /* data di pubblicazione letta dal server: niente da aggiornare a mano */
+    try{
+      var lm=r.headers.get('last-modified');
+      if(lm){ var dt=new Date(lm);
+        if(!isNaN(dt)) { APP_PUBBLICATA=dt.toISOString().slice(0,10); stampVersion(); } }
+    }catch(e){}
     var t=await r.text();
     var m=/var APP_VERSION='([^']+)'/.exec(t);
     if(!m || m[1]===APP_VERSION) { UPDATE_PENDING=''; }
