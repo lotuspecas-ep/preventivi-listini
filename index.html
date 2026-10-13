@@ -531,6 +531,16 @@
   .cesec small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px}
   .cenote{margin-top:8px}
   .incluso{font-size:11.5px;font-weight:700;color:var(--teal-deep);letter-spacing:.2px}
+  .spesebank{margin-top:12px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--tint2)}
+  .spesebank .sbrow{display:flex;align-items:flex-end;gap:14px;margin:7px 0 0 26px;flex-wrap:wrap}
+  .spesebank .sbrow .bf{flex:0 0 190px}
+  .spesebank .sbcalc{flex:1 1 220px;margin:0 0 4px;font-size:11px;color:var(--muted);line-height:1.45}
+  .spesebank .sbrow.off{display:none}
+  .spesebank .clausetxt{margin:9px 0 0;font-size:11.5px;color:var(--ink);line-height:1.5}
+  .spesebank .clausetxt.off{display:none}
+  .amtwrap{position:relative;display:block}
+  .amtwrap .eur{position:absolute;right:2px;bottom:4px;font-size:11px;color:var(--muted);font-style:normal}
+  .amtwrap .in{padding-right:14px;text-align:right}
   .mandato{margin-top:10px;padding:9px 11px;border:1px dashed var(--line);border-radius:8px;background:var(--tint2)}
   .mandato .mtesto{display:block;font-size:11.5px;color:var(--ink);line-height:1.45}
   .mandato .mstato{display:block;margin-top:5px;font-size:10.5px;font-weight:700;color:var(--teal-deep)}
@@ -1397,6 +1407,20 @@
             </div>
             <div class="mandato" id="sddMandato"><span class="mtesto">Con la firma di accettazione il cliente sottoscrive il mandato SEPA e autorizza gli addebiti ricorrenti alle scadenze del piano. Il rimborso segue le regole dello schema scelto.</span><span class="mstato" id="sddStato"></span></div>
           </div>
+
+          <div class="spesebank hide" id="blkSpeseInc">
+            <label class="switch"><input type="checkbox" id="incOn" data-k="pay.incasso.on"> Spese di incasso a carico del cliente</label>
+            <div class="sbrow" id="incRow">
+              <label class="bf"><span>Importo per scadenza</span><span class="amtwrap"><input class="in amt" data-k="pay.incasso.amt" inputmode="decimal" placeholder="3,00"><i class="eur">&euro;</i></span></label>
+              <p class="sbcalc" id="incCalc"></p>
+            </div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="insOn" data-k="pay.insoluto.on"> Spese di insoluto a carico del cliente</label>
+            <div class="sbrow" id="insRow">
+              <label class="bf"><span>Importo per insoluto</span><span class="amtwrap"><input class="in amt" data-k="pay.insoluto.amt" inputmode="decimal" placeholder="15,00"><i class="eur">&euro;</i></span></label>
+              <p class="sbcalc">Non entra nel totale: è una clausola, si addebita solo se l'addebito viene respinto.</p>
+            </div>
+            <p class="clausetxt" id="insTxt"></p>
+          </div>
         </div>
       </div>
 
@@ -1875,6 +1899,8 @@ function blankPayload(){
       ant:{on:false,pct:'30',amt:'',manual:'',date:''},
       plan:'unico', unicoDate:'', start:'', fm:false, n:'3', every:'30', rate:[],
       custom:[], method:'bonifico',
+      /* spese bancarie riaddebitate: entrano nel totale solo se attivate */
+      incasso:{on:false,amt:'3,00'}, insoluto:{on:false,amt:'15,00'},
       bank:{banca:LP_BANK.banca,iban:LP_BANK.iban,bic:LP_BANK.bic},
       riba:{intest:'',banca:'',iban:'',bic:''},
       sdd:{intest:'',cf:'',iban:'',bic:'',consent:false} },
@@ -1884,6 +1910,18 @@ function blankPayload(){
 }
 
 /* sincronizza le rate: date a cascata dall'ultima data modificata, importi liberi ripartiti in parti uguali */
+/* Le spese di incasso valgono solo dove le sosteniamo noi */
+function speseIncassoAttive(p){
+  var pay=p&&p.pay; if(!pay||!pay.incasso||!pay.incasso.on) return false;
+  return pay.method==='sdd' || pay.method==='riba';
+}
+/* Numero di scadenze del residuo, anticipo escluso */
+function numeroScadenze(p){
+  var pay=p&&p.pay; if(!pay) return 0;
+  if(pay.plan==='unico') return 1;
+  if(pay.plan==='custom') return (pay.custom||[]).length;
+  return rateOffsets(pay).length;
+}
 function rateParams(pay){
   if(pay.mode==='noleggio'){ return {n:Math.max(1,parseInt(pay.nol&&pay.nol.mesi,10)||12), every:30, auto:true}; }
   return {n:Math.max(0,parseInt(pay.n,10)||0), every:Math.max(1,parseInt(pay.every,10)||30), auto:false};
@@ -1956,10 +1994,17 @@ function computeAll(p){
   c.mesi = c.nol ? (parseInt(p.pay.nol&&p.pay.nol.mesi,10)||0) : 0;
   c.righeC=imp;
   c.speseC = (p.cons&&p.cons.spese==='addebitate') ? cents(p.cons.speseAmt) : 0;
+  /* Spese di incasso: la banca le addebita a ogni disposizione presentata,
+     quindi una per scadenza del residuo. L'anticipo è sempre a bonifico e
+     non ne genera. Valgono solo per SDD e Ri.Ba.: sul bonifico la spesa
+     la sostiene il cliente presso la propria banca, non la incassiamo noi. */
+  c.incassoUnit = cents(p.pay && p.pay.incasso ? p.pay.incasso.amt : 0);
+  c.incassoN = speseIncassoAttive(p) ? numeroScadenze(p) : 0;
+  c.incassoC = c.incassoN * c.incassoUnit;
   c.oreAttiv = p.cons?Math.max(0,num(p.cons.attivOre)):0;
   c.tariffaC = p.cons?cents(p.cons.tariffaOra):0;
   c.attivC = Math.round(c.oreAttiv*c.tariffaC);
-  imp+=c.speseC+c.attivC;
+  imp+=c.speseC+c.attivC+c.incassoC;
   c.impC=imp; c.ivaC=Math.round(imp*IVA_RATE); c.totC=imp+c.ivaC;
   var pay=p.pay;
   c.baseC = c.totC;
@@ -2004,7 +2049,7 @@ function calcCheck(p,c){
   var e=[];
   var sum=0; c.lines.forEach(function(l){ sum+=l.totC; });
   if(sum!==c.righeC) e.push({k:'tot',msg:'La somma delle righe non coincide con l\'imponibile.'});
-  if(c.righeC+c.speseC+c.attivC!==c.impC) e.push({k:'tot',msg:'Imponibile incoerente con righe, attivazione e spese.'});
+  if(c.righeC+c.speseC+c.attivC+c.incassoC!==c.impC) e.push({k:'tot',msg:'Imponibile incoerente con righe, attivazione e spese.'});
   if(c.impC+c.ivaC!==c.totC) e.push({k:'tot',msg:'Imponibile + IVA non coincide con il totale.'});
   if(c.ivaC!==Math.round(c.impC*IVA_RATE)) e.push({k:'tot',msg:'IVA non pari al 22% dell\'imponibile.'});
   if(p.pay.ant.on){
@@ -2099,6 +2144,10 @@ function validateDoc(p,c){
     if(!pay.nol || !(parseInt(pay.nol.mesi,10)>0)) push('pay.nol.mesi','Durata del noleggio','Pagamento');
   }
   if(pay.plan==='rateale' && !rateOffsets(pay).length) push('pay.n','Numero di rate','Pagamento');
+  if(speseIncassoAttive(p) && !(cents(pay.incasso.amt)>0))
+    push('pay.incasso.amt','Importo delle spese di incasso per scadenza','Pagamento');
+  if(pay.insoluto && pay.insoluto.on && !(cents(pay.insoluto.amt)>0))
+    push('pay.insoluto.amt','Importo delle spese di insoluto','Pagamento');
   if(pay.plan==='custom') (pay.custom||[]).forEach(function(r,i){ req('pay.custom.'+i+'.voce',r.voce,'Voce '+(i+1)+': descrizione','Pagamento'); });
   if(c.resC>0 || pay.ant.on){
     if(pay.method==='bonifico' || pay.ant.on){
@@ -2144,6 +2193,7 @@ function contentString(p){
   /* un campo aggiunto e lasciato vuoto non deve cambiare l'impronta dei documenti
      emessi prima che esistesse: vuoto equivale ad assente */
   if(q.cli) CLI_ADDED.forEach(function(f){ if(!(''+(q.cli[f]||'')).trim()) delete q.cli[f]; });
+  if(q.pay){ ['incasso','insoluto'].forEach(function(f){ if(q.pay[f] && !q.pay[f].on) delete q.pay[f]; }); }
   var c=computeAll(JSON.parse(JSON.stringify(q)));
   return canon({doc:q, calc:{imp:c.impC,iva:c.ivaC,tot:c.totC,base:c.baseC,ant:c.antC,
     sched:c.sched.map(function(r){return [r.label,r.date,r.amtC];})}});
@@ -2348,6 +2398,18 @@ function refresh(){
   $('blkBonifico').classList.toggle('hide',!(pay.method==='bonifico'||pay.ant.on));
   $('blkRiba').classList.toggle('hide',!(needRes && pay.method==='riba'));
   $('blkSdd').classList.toggle('hide',!(needRes && pay.method==='sdd'));
+  var mostraSpese = needRes && (pay.method==='sdd' || pay.method==='riba');
+  $('blkSpeseInc').classList.toggle('hide',!mostraSpese);
+  $('incRow').classList.toggle('off',!(pay.incasso&&pay.incasso.on));
+  $('insRow').classList.toggle('off',!(pay.insoluto&&pay.insoluto.on));
+  var insOn=!!(pay.insoluto&&pay.insoluto.on), insC=cents(pay.insoluto?pay.insoluto.amt:0);
+  $('insTxt').classList.toggle('off',!insOn);
+  setText('insTxt', insOn
+    ? ('In caso di mancato pagamento alla scadenza, o di storno dell\'addebito, saranno addebitate al Cliente le spese bancarie di '+eurC(insC)+' per ogni disposizione insoluta, oltre agli interessi di mora di legge.')
+    : '');
+  setText('incCalc', c.incassoN
+    ? (c.incassoN+(c.incassoN===1?' scadenza':' scadenze')+' × '+eurC(c.incassoUnit)+' = '+eurC(c.incassoC)+' + IVA · importo compreso nel totale e ripartito nel piano')
+    : 'Una commissione per ogni scadenza del residuo. L\'anticipo, pagato con bonifico, non ne genera.');
   renderMandatoSdd();
   /* consegna */
   $('speseRow').classList.toggle('hide',P.cons.spese!=='addebitate');
@@ -2380,6 +2442,7 @@ function renderTotals(c){
   h+='<div class="l sub"><span>Prodotti e servizi</span><span>'+eurC(c.righeC)+'</span></div>';
   if(c.attivC) h+='<div class="l sub"><span>Attivazione software ('+(''+c.oreAttiv).replace('.',',')+' h × '+eurC(c.tariffaC)+')</span><span>'+eurC(c.attivC)+'</span></div>';
   if(c.speseC) h+='<div class="l sub"><span>Spese di spedizione e installazione</span><span>'+eurC(c.speseC)+'</span></div>';
+  if(c.incassoC) h+='<div class="l sub"><span>Spese di incasso ('+c.incassoN+' × '+eurC(c.incassoUnit)+')</span><span>'+eurC(c.incassoC)+'</span></div>';
   h+='<div class="l"><span>Totale imponibile</span><span>'+eurC(c.impC)+'</span></div>';
   h+='<div class="l"><span>IVA (22%)</span><span>'+eurC(c.ivaC)+'</span></div>';
   h+='<div class="l grand"><span>Totale ordine (IVA incl.)</span><span>'+eurC(c.totC)+'</span></div>';
@@ -3924,7 +3987,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v3.0.0';
+var APP_VERSION='v3.1.0';
 /* Data di riserva: vale solo se la pagina non espone la data di
    pubblicazione. Quella vera la prende il server, così non può più
    restare indietro rispetto alla versione. */
