@@ -530,6 +530,11 @@
   .cesec:first-child{margin-top:0;border-top:0;padding-top:0}
   .cesec small{display:block;text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px}
   .cenote{margin-top:8px}
+  .comprimi{margin:7px 0 0;font-size:11px;color:var(--muted);line-height:1.5}
+  .comprimi a{color:var(--teal-deep);font-weight:600}
+  .upwarn{margin:8px 0 0;padding:8px 11px;border-radius:8px;font-size:11.5px;line-height:1.5;
+    background:#F6EFDF;border:1px solid #C9A64E;color:#7A5B18}
+  .upwarn.hide{display:none}
   .incluso{font-size:11.5px;font-weight:700;color:var(--teal-deep);letter-spacing:.2px}
   .spesebank{margin-top:12px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--tint2)}
   .spesebank .sbrow{display:flex;align-items:flex-end;gap:14px;margin:7px 0 0 26px;flex-wrap:wrap}
@@ -1622,7 +1627,10 @@
     <div class="mhead"><span id="upTitle">Carica copia firmata</span><button class="mx" type="button" onclick="closeUpload()" aria-label="Chiudi">&times;</button></div>
     <div class="mbody">
       <p class="mintro">Per il cliente che stampa il PDF e lo firma a mano, o che lo firma con firma digitale qualificata. Il file viene archiviato, le firme del cliente risultano apposte su carta e il documento passa a "Firmato".</p>
-      <label class="ff"><span>PDF firmato (max 20 MB)</span><input type="file" id="upFile" accept="application/pdf,.pdf" class="box"></label>
+      <label class="ff"><span>PDF firmato (max 3 MB)</span><input type="file" id="upFile" accept="application/pdf,.pdf" class="box" onchange="upPesoCheck()"></label>
+      <p class="comprimi">Una scansione sta sotto 1 MB se compressa. Lo spazio di archiviazione è condiviso da tutti i documenti: tienili leggeri.
+        <a href="https://www.ilovepdf.com/it/comprimere_pdf" target="_blank" rel="noopener noreferrer">Comprimi il PDF qui</a></p>
+      <p class="upwarn hide" id="upPeso"></p>
       <div class="fgrid two">
         <label class="ff"><span>Chi ha firmato *</span><input class="box" id="upNome" placeholder="Nome e cognome come in calce"></label>
         <label class="ff"><span>Data della firma</span><input class="box" id="upData" type="date"></label>
@@ -2770,10 +2778,13 @@ async function confirmSign(){
   if(SHARE){ await shareSign(slot,d); return; }
   /* cliente in presenza: verifica integrità prima di registrare */
   var ok=await guardIntegrity('firma'); if(!ok) return;
+  var primaSign=clone(P.sign), primaMeta=clone(P.meta||{}), primoStato=DOC.status;
   if(P.sign[slot]) logSign(slot,'rifatta', USER?USER.email:'operatore');
   d.docHash=DOC.hash; P.sign[slot]=d;
   var status = (P.sign.acc && P.sign.vess) ? 'firmato' : 'emesso';
-  await persist(status,{noMergeSign:true}); applyLock();
+  var r=await persist(status,{noMergeSign:true});
+  if(r.rifiutato){ P.sign=primaSign; P.meta=primaMeta; DOC.status=primoStato; applyLock(); renderSign(slot); return; }
+  applyLock();
   toast(status==='firmato'?'Documento firmato dal cliente':'Firma cliente registrata');
 }
 function renderSign(slot){
@@ -2859,10 +2870,12 @@ async function cancelSignature(slot){
   var nome=P.sign[slot].nome||'';
   if(!confirm('Annullare la firma'+(nome?' di '+nome:'')+'? Resta tracciata nello storico del documento.')) return;
   if(SHARE){ if(await shareDropSign(slot)) toast('Firma annullata'); return; }
+  var primaSign=clone(P.sign), primaMeta=clone(P.meta||{});
   logSign(slot,'annullata', USER?USER.email:'operatore');
   REDO_PRE[slot]=P.sign[slot];
   P.sign[slot]=null;
-  await persist(DOC.status,{noMergeSign:true});
+  var r=await persist(DOC.status,{noMergeSign:true});
+  if(r.rifiutato){ P.sign=primaSign; P.meta=primaMeta; delete REDO_PRE[slot]; applyLock(); renderSign(slot); return; }
   applyLock();
   toast('Firma annullata');
 }
@@ -3123,12 +3136,24 @@ var Store={
   getLocal:function(id){ return lsLoad().filter(function(r){return r.id===id;})[0]; },
   putLocal:function(rec){ var a=lsLoad().filter(function(r){return r.id!==rec.id;}); a.push(rec); lsSaveAll(a); },
   save:async function(rec){
+    var prec=Store.getLocal(rec.id);
     rec.pending=true; Store.putLocal(rec);
     if(!(sbConnected&&SB)) return {remote:false};
     try{ var clean=Object.assign({},rec); delete clean.pending;
       var res=await SB.from('documenti').upsert(sbRow(clean)); if(res.error) throw res.error;
       rec.pending=false; Store.putLocal(rec); setSync(); return {remote:true}; }
-    catch(e){ console.warn('sb upsert',e); setSync('Salvataggio remoto non riuscito: '+(e.message||e)); return {remote:false,error:e}; }
+    catch(e){ console.warn('sb upsert',e);
+      var msg=e.message||''+e;
+      /* Rifiuto esplicito del database: non è una mancanza di rete, quindi
+         la copia locale va riportata com'era. Altrimenti l'elenco mostra
+         come firmato un documento che nell'archivio non lo è. */
+      if(/non può essere modificato|crea una revisione|row-level security|permission denied|not authorized/i.test(msg)){
+        if(prec) Store.putLocal(prec);
+        else lsSaveAll(lsLoad().filter(function(r){ return r.id!==rec.id; }));
+        setSync('Modifica respinta dal database');
+        return {remote:false,error:e,rifiutato:true};
+      }
+      setSync('Salvataggio remoto non riuscito: '+msg); return {remote:false,error:e}; }
   },
   remove:async function(id){
     if(sbConnected&&SB){ var res=await SB.from('documenti').delete().eq('id',id); if(res.error){ toast('Eliminazione non riuscita: '+res.error.message); return false; } }
@@ -3230,12 +3255,28 @@ async function authInit(){
 }
 
 /* ---- persistenza con merge delle firme cliente arrivate dal link ---- */
+/* Su un documento già emesso il contenuto è sigillato: si rimanda indietro
+   esattamente quello registrato, sostituendo solo firme e storico. Senza
+   questo, l'apertura con una versione più recente dell'app aggiunge al
+   payload i campi introdotti nel frattempo — vuoti, e quindi ininfluenti
+   sull'impronta — e il database rifiuta la scrittura perché confronta il
+   JSON parola per parola. */
+function contenutoDaSalvare(remote,status){
+  var bloccato = remote && (remote.status==='emesso' || remote.status==='firmato')
+              && (status==='emesso' || status==='firmato') && remote.payload;
+  if(!bloccato) return clone(P);
+  var base=clone(remote.payload);
+  base.sign=clone(P.sign);
+  base.meta=clone(P.meta||{});
+  return base;
+}
 async function persist(status, opts){
   collect();
   if(!DOC.id) DOC.id='doc_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  if(DOC.id && sbConnected && SB && status!=='bozza' && !(opts&&opts.noMergeSign)){
-    var remote=await Store.fetch(DOC.id);
-    if(remote && remote.payload && remote.payload.sign){
+  var remote=null;
+  if(DOC.id && sbConnected && SB && status!=='bozza'){
+    remote=await Store.fetch(DOC.id);
+    if(remote && remote.payload && remote.payload.sign && !(opts&&opts.noMergeSign)){
       ['acc','vess'].forEach(function(s){ if(!P.sign[s] && remote.payload.sign[s]) P.sign[s]=remote.payload.sign[s]; });
       if(remote.status==='firmato') status='firmato';
     }
@@ -3247,7 +3288,7 @@ async function persist(status, opts){
     numero:P.head.numero, data:c.docDate, cliente:P.cli.ragione, importo:Math.round(c.impC/100),
     payMode:P.pay.mode, plan:P.pay.plan, signed:{lp:!!P.sign.lp,acc:!!P.sign.acc,vess:!!P.sign.vess},
     hash:DOC.hash||'', hashVer:DOC.hashVer||'',
-    role:CURRENT_ROLE, creator:P.creator, payload:clone(P) };
+    role:CURRENT_ROLE, creator:P.creator, payload:contenutoDaSalvare(remote,status) };
   var r=await Store.save(rec); refreshCounts();
   if(r.error && /revisione|non può essere modificato/.test(r.error.message||'')){
     showErrors('Salvataggio rifiutato dal database', r.error.message, [{k:'tot',sec:'Database',msg:r.error.message}]);
@@ -3489,16 +3530,32 @@ function openUpload(){
   if(DOC.status!=='emesso'){ toast('Disponibile per documenti emessi'); return; }
   if(!(sbConnected&&SB)){ toast('Serve la connessione al database'); return; }
   $('upFile').value=''; $('upCheck').checked=false; setText('upErr','');
+  $('upPeso').classList.add('hide');
   $('upNome').value=(P.sign&&P.sign.acc&&P.sign.acc.nome)||P.cli.referente||'';
   $('upData').value=isoToday(); $('upModo').value='cartacea';
   $('uploadModal').classList.remove('hide'); document.documentElement.classList.add('modal-open');
 }
 function closeUpload(){ $('uploadModal').classList.add('hide'); document.documentElement.classList.remove('modal-open'); }
+/* avvisa appena il file viene scelto, non dopo il caricamento */
+function upPesoCheck(){
+  var f=$('upFile').files&&$('upFile').files[0], b=$('upPeso');
+  if(!f){ b.classList.add('hide'); return; }
+  if(f.size>FIRM_MAX){
+    b.classList.remove('hide');
+    b.innerHTML='Troppo pesante: '+fmtSize(f.size)+'. Il limite è 3 MB — comprimilo con il collegamento qui sopra.';
+  } else if(f.size>FIRM_AVVISO){
+    b.classList.remove('hide');
+    b.innerHTML='Pesa '+fmtSize(f.size)+'. Si può caricare, ma conviene comprimerlo: una scansione sta sotto 1 MB e lo spazio è condiviso da tutti i documenti.';
+  } else b.classList.add('hide');
+}
 async function doUpload(){
   var f=$('upFile').files&&$('upFile').files[0];
   if(!f){ setText('upErr','Seleziona il PDF firmato.'); return; }
   if(f.type!=='application/pdf'&&!/\.pdf$/i.test(f.name)){ setText('upErr','Il file deve essere un PDF.'); return; }
-  if(f.size>20*1024*1024){ setText('upErr','Massimo 20 MB.'); return; }
+  if(f.size>FIRM_MAX){
+    setText('upErr','"'+f.name+'" pesa '+fmtSize(f.size)+'. Il limite è 3 MB: comprimi il PDF con il collegamento qui sopra e riprova.');
+    return;
+  }
   if(!$('upCheck').checked){ setText('upErr','Conferma di aver verificato il contenuto.'); return; }
   var nome=($('upNome').value||'').trim();
   if(!nome){ setText('upErr','Indica chi ha firmato il documento.'); return; }
@@ -3506,9 +3563,12 @@ async function doUpload(){
   setText('upErr','Caricamento…');
   var path=DOC.id+'/'+Date.now()+'_firmato.pdf';
   var up=await SB.storage.from('firmati').upload(path,f,{contentType:'application/pdf',upsert:false});
-  if(up.error){ setText('upErr','Caricamento non riuscito: '+up.error.message); return; }
+  if(up.error){ var et=allErrText(up.error.message);
+    setText('upErr', et.t+' — '+et.b.replace(/<[^>]+>/g,'')); return; }
   var buf=await f.arrayBuffer(); var fh=await crypto.subtle.digest('SHA-256',buf);
   var fileHash=Array.prototype.map.call(new Uint8Array(fh),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+  /* da qui in poi si può dover tornare indietro: si tiene una copia */
+  var primaSign=clone(P.sign), primaMeta=clone(P.meta||{});
   P.meta=P.meta||{};
   P.meta.signedCopy={path:path,name:f.name,size:f.size,fileHash:fileHash,docHash:DOC.hash,
     ts:new Date().toISOString(),by:USER?USER.email:'',modo:modo,firmatario:nome,dataFirma:dataF};
@@ -3523,7 +3583,17 @@ async function doUpload(){
       mandatoSdd:(slot==='acc' && P.pay.method==='sdd') ? true : undefined};
     logSign(slot, modo==='qualificata'?'firmata con firma digitale qualificata':'firmata a mano su carta', USER?USER.email:'');
   });
-  var r=await persist('firmato'); closeUpload(); applyLock();
+  var r=await persist('firmato');
+  if(r.rifiutato){
+    /* registrazione respinta: si annulla tutto, compreso il file appena
+       caricato, altrimenti resta nel deposito senza un documento che lo citi */
+    P.sign=primaSign; P.meta=primaMeta; DOC.status='emesso';
+    try{ await SB.storage.from('firmati').remove([path]); }catch(e){}
+    applyLock(); renderSign('acc'); renderSign('vess');
+    setText('upErr','Il database ha rifiutato la registrazione: il file non è stato archiviato. Riprova dopo aver aggiornato la pagina.');
+    return;
+  }
+  closeUpload(); applyLock();
   toast(r.remote?'Copia firmata archiviata · documento firmato':'Salvato in locale, sincronizzazione in sospeso');
 }
 async function openSignedCopy(){
@@ -3931,6 +4001,8 @@ function openAllegato(i){
   window.open(allUrl(a.path),'_blank','noopener');
 }
 var ALL_MAX=5*1024*1024;
+var FIRM_MAX=3*1024*1024;      /* copia firmata: oltre questo si rifiuta */
+var FIRM_AVVISO=1024*1024;     /* oltre questo si consiglia di comprimere */
 function allMsg(kind,title,body){
   var m=$('allMsg'); if(!m) return;
   if(!kind){ m.className='dzmsg'; m.innerHTML=''; return; }
@@ -3947,7 +4019,9 @@ function allErrText(msg){
   if(/row-level security|not authorized|permission/i.test(msg))
     return {t:'Non hai i permessi su questo documento',b:'Puoi allegare file solo ai documenti che hai creato tu, o se fai parte del team Lotus Pecas.'};
   if(/payload too large|exceeded the maximum/i.test(msg))
-    return {t:'File troppo grande per il server',b:'Riduci il PDF e riprova.'};
+    return {t:'File troppo grande per il server',b:'<a href="https://www.ilovepdf.com/it/comprimere_pdf" target="_blank" rel="noopener noreferrer">Comprimi il PDF</a> e riprova.'};
+  if(/quota|storage limit|exceeded.*(storage|plan)|insufficient storage|over.*limit/i.test(msg))
+    return {t:'Spazio di archiviazione esaurito',b:'Non si possono caricare nuovi file finché non si libera spazio. Documenti, firme e stampe continuano a funzionare. Elimina gli allegati dei documenti annullati, oppure avvisa chi amministra il sistema.'};
   return {t:'Caricamento non riuscito',b:esc(msg)};
 }
 async function addAllegato(input){
@@ -3956,7 +4030,8 @@ async function addAllegato(input){
   allMsg(null);
   if(isLocked()){ allMsg('err','Documento emesso','Gli allegati non si possono più modificare: usa "Modifica" per tornare in bozza.'); return; }
   if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){ allMsg('err','Formato non ammesso','Sono accettati solo file PDF.'); return; }
-  if(f.size>ALL_MAX){ allMsg('err','File troppo grande','"'+esc(f.name)+'" pesa '+fmtSize(f.size)+'. Il limite è 5 MB: comprimi il PDF e riprova.'); return; }
+  if(f.size>ALL_MAX){ allMsg('err','File troppo grande','"'+esc(f.name)+'" pesa '+fmtSize(f.size)+'. Il limite è 5 MB: <a href="https://www.ilovepdf.com/it/comprimere_pdf" target="_blank" rel="noopener noreferrer">comprimi il PDF qui</a> e riprova.'); return; }
+  if(f.size>FIRM_AVVISO) allMsg('wait','"'+esc(f.name)+'" pesa '+fmtSize(f.size),'Si può allegare, ma conviene comprimerlo: lo spazio di archiviazione è condiviso da tutti i documenti.');
   if(!(sbConnected&&SB)){ allMsg('err','Database non collegato','Serve la connessione al database per archiviare gli allegati.'); return; }
   collect();
   allBusy(true); allMsg('wait','Caricamento di "'+esc(f.name)+'" in corso…','');
@@ -3987,7 +4062,7 @@ async function delAllegato(i){
 }
 
 /* ================= VERSIONE E STATO DEL SISTEMA ================= */
-var APP_VERSION='v3.1.0';
+var APP_VERSION='v3.2.0';
 /* Data di riserva: vale solo se la pagina non espone la data di
    pubblicazione. Quella vera la prende il server, così non può più
    restare indietro rispetto alla versione. */
@@ -4045,6 +4120,20 @@ function renderHealth(){
   if(st){ st.textContent = HEALTH.at ? 'Ultimo controllo: '+HEALTH.at.toLocaleTimeString('it-IT') : '—';
     st.classList.toggle('ok',HEALTH.state==='ok'); }
 }
+var SPAZIO_TOTALE=1024*1024*1024;   /* quota del piano gratuito */
+/* Somma dei file registrati nei documenti. È una stima: non vede eventuali
+   file rimasti nel deposito senza un documento che li citi, né i documenti
+   di altri operatori che questo utente non può leggere. */
+function spazioOccupato(){
+  var byte=0, firmati=0, allegati=0;
+  Store.list().forEach(function(r){
+    var p=r.payload; if(!p) return;
+    (p.allegati||[]).forEach(function(a){ byte+=(+a.size||0); allegati++; });
+    var sc=p.meta&&p.meta.signedCopy;
+    if(sc && sc.size){ byte+=(+sc.size||0); firmati++; }
+  });
+  return {byte:byte, file:firmati+allegati, firmati:firmati, allegati:allegati};
+}
 async function runHealth(manual){
   if(!USER) return;
   setHealthChip('busy','Verifica in corso…');
@@ -4079,11 +4168,22 @@ async function runHealth(manual){
       else add('warn','Archivio allegati non verificabile', esc(e2.message||''));
     }
   }
-  /* 3. documenti non ancora sincronizzati */
+  /* 3. spazio di archiviazione occupato dai file registrati */
+  if(archivioOk){
+    var sp=spazioOccupato();
+    var pct=Math.round(sp.byte/SPAZIO_TOTALE*1000)/10;
+    var dett=fmtSize(sp.byte)+' su 1 GB · '+sp.file+(sp.file===1?' file':' file')+
+      ' ('+sp.firmati+' copie firmate, '+sp.allegati+' allegati) · '+(''+pct).replace('.',',')+'%';
+    if(pct>=80) add('bad','Spazio di archiviazione quasi esaurito', dett+
+      ' — libera spazio eliminando gli allegati dei documenti annullati, altrimenti i prossimi caricamenti verranno rifiutati.');
+    else if(pct>=60) add('warn','Spazio di archiviazione oltre il 60%', dett);
+    else add('ok','Spazio di archiviazione', dett);
+  }
+  /* 4. documenti non ancora sincronizzati */
   var pend=Store.list().filter(function(r){ return r.pending; }).length;
   if(pend) add('warn',pend+' document'+(pend===1?'o':'i')+' da sincronizzare','Restano su questo dispositivo finché il collegamento non torna.');
   else if(archivioOk) add('ok','Tutto sincronizzato','');
-  /* 4. listino (solo team) */
+  /* 5. listino (solo team) */
   if(archivioOk && roleOf(USER)==='team'){
     try{
       var l=await SB.from('listino_items').select('id').limit(1);
